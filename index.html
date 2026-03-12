@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ハイスト タイマー</title>
+  <style>
+    /* ===== CSS変数・リセット ===== */
+    :root {
+      --bg-main: #0a0f1e;
+      --bg-panel: #111827;
+      --bg-card: #1c2540;
+      --accent-gold: #f0a500;
+      --accent-gold-dim: #b87c00;
+      --accent-blue: #4a90e2;
+      --accent-red: #e25c4a;
+      --text-primary: #f0f0f0;
+      --text-secondary: #8899bb;
+      --text-dim: #4a5568;
+      --border: #2a3550;
+      --ring-bg: #1a2540;
+      --ring-fill: #f0a500;
+      --ring-warn: #e25c4a;
+      --btn-primary: #f0a500;
+      --btn-primary-text: #0a0f1e;
+      --btn-secondary: #1c2540;
+      --btn-secondary-border: #2a3550;
+      --tab-active: #f0a500;
+      --tab-inactive: #1c2540;
+      --flash-color: #e25c4a;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      font-family: 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN', 'Noto Sans JP', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ===== ヘッダー ===== */
+    #header {
+      text-align: center;
+      padding: 20px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #0d1528 0%, var(--bg-main) 100%);
+      flex-shrink: 0;
+    }
+
+    #site-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--accent-gold);
+      text-shadow: 0 0 20px rgba(240,165,0,0.4);
+      margin-bottom: 6px;
+    }
+
+    #current-datetime {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+
+    #current-date { margin-right: 10px; }
+
+    /* ===== タブ ===== */
+    #tabs {
+      display: flex;
+      padding: 12px 16px 0;
+      gap: 8px;
+      max-width: 540px;
+      margin: 0 auto;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      background: var(--tab-inactive);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: var(--radius) var(--radius) 0 0;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .tab-btn.active {
+      background: var(--bg-panel);
+      color: var(--accent-gold);
+      border-color: var(--border);
+      border-bottom-color: var(--bg-panel);
+    }
+
+    /* ===== メインコンテンツ ===== */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px 24px;
+    }
+
+    .panel {
+      display: none;
+      width: 100%;
+      max-width: 540px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--radius) var(--radius) var(--radius);
+      padding: 24px;
+    }
+
+    .panel.active { display: block; }
+
+    /* ===== タイマーモード切替 ===== */
+    .mode-toggle {
+      display: flex;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 20px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 8px 0;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.04em;
+    }
+
+    .mode-btn.active {
+      background: var(--accent-gold);
+      color: var(--btn-primary-text);
+    }
+
+    /* ===== 入力エリア ===== */
+    .input-area {
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="number"],
+    input[type="time"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      padding: 10px 14px;
+      width: 100%;
+      text-align: center;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input[type="number"]:focus,
+    input[type="time"]:focus {
+      outline: none;
+      border-color: var(--accent-gold);
+    }
+
+    .input-unit {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .error-msg {
+      color: var(--accent-red);
+      font-size: 0.8rem;
+      margin-top: 6px;
+      min-height: 1.2em;
+    }
+
+    /* ===== プリセットボタン ===== */
+    .preset-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+
+    .preset-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .preset-btn {
+      flex: 1;
+      min-width: 60px;
+      padding: 8px 4px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.03em;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-gold);
+      color: var(--btn-primary-text);
+      border-color: var(--accent-gold);
+    }
+
+    /* ===== 円形プログレスリング ===== */
+    .ring-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 24px;
+      position: relative;
+      width: 260px;
+      height: 260px;
+    }
+
+    .ring-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: var(--ring-bg);
+      stroke-width: 14;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: var(--ring-fill);
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
+    }
+
+    .ring-center {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    #timer-display {
+      font-size: 3.2rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      letter-spacing: 0.03em;
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(240,165,0,0.3);
+      display: block;
+    }
+
+    .timer-status-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      letter-spacing: 0.06em;
+    }
+
+    /* ===== タイマー操作ボタン ===== */
+    .control-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 80px;
+      padding: 13px 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-primary {
+      background: var(--accent-gold);
+      color: var(--btn-primary-text);
+    }
+
+    .btn-primary:hover { filter: brightness(1.1); }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    .btn-danger {
+      background: var(--accent-red);
+      color: #fff;
+    }
+
+    .btn-danger:hover { filter: brightness(1.1); }
+
+    .btn-mute {
+      max-width: 52px;
+      min-width: 52px;
+      font-size: 1.1rem;
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* ===== ストップウォッチ ===== */
+    .sw-display-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 16px 0 28px;
+    }
+
+    #sw-display {
+      font-size: 3.8rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-shadow: 0 0 20px rgba(74,144,226,0.25);
+    }
+
+    /* ===== キャラ画像スペース ===== */
+    .char-space {
+      width: 100%;
+      min-height: 80px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 8px;
+      /* 将来的にキャラ画像をここに配置 */
+    }
+
+    .char-placeholder {
+      /* 画像が入るまでは非表示 */
+      display: none;
+    }
+
+    /* ===== 全画面オーバーレイ ===== */
+    #fullscreen-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #050a14;
+      z-index: 1000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #fullscreen-overlay.active { display: flex; }
+
+    #fs-time {
+      font-size: clamp(5rem, 18vw, 14rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-primary);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      text-shadow: 0 0 60px rgba(240,165,0,0.4);
+    }
+
+    #fs-ring-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: min(60vmin, 480px);
+      height: min(60vmin, 480px);
+    }
+
+    #fs-ring-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    #fs-ring-track { fill: none; stroke: #1a2540; stroke-width: 10; }
+    #fs-ring-progress {
+      fill: none;
+      stroke: var(--ring-fill);
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
+    }
+
+    .fs-center {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    #fs-back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.04em;
+    }
+
+    #fs-back-btn:hover { background: rgba(255,255,255,0.15); color: var(--text-primary); }
+
+    #fs-alarm-btn {
+      display: none;
+      position: absolute;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-red);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 16px 48px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      animation: pulse 1s infinite;
+    }
+
+    /* ===== 点滅演出 ===== */
+    @keyframes flash-bg {
+      0%, 100% { background: #050a14; }
+      50% { background: #2a0f0a; }
+    }
+
+    @keyframes flash-main {
+      0%, 100% { background: var(--bg-main); }
+      50% { background: #1a0808; }
+    }
+
+    body.flashing { animation: flash-main 0.6s infinite; }
+    #fullscreen-overlay.flashing { animation: flash-bg 0.6s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.03); }
+    }
+
+    /* ===== アラーム停止ボタン（通常画面） ===== */
+    #alarm-stop-row {
+      display: none;
+      margin-top: 12px;
+    }
+
+    /* ===== セパレーター ===== */
+    .section-sep {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 20px 0;
+    }
+
+    /* ===== レスポンシブ ===== */
+    @media (max-width: 480px) {
+      #site-title { font-size: 1.1rem; }
+      .panel { padding: 18px 14px; }
+
+      .ring-container {
+        width: 220px;
+        height: 220px;
+      }
+
+      #timer-display { font-size: 2.6rem; }
+      #sw-display { font-size: 2.8rem; }
+
+      .preset-btn { min-width: 50px; font-size: 0.82rem; }
+      .btn { font-size: 0.88rem; padding: 12px 8px; }
+    }
+
+    /* ===== 「終了」テキスト ===== */
+    .finished-label {
+      font-size: 0.85rem;
+      color: var(--accent-red);
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <div id="header">
+    <div id="site-title">⏱ HIGHSTO TIMER</div>
+    <div id="current-datetime">
+      <span id="current-date"></span>
+      <span id="current-time"></span>
+    </div>
+  </div>
+
+  <!-- タブ -->
+  <div id="tabs">
+    <button class="tab-btn active" id="tab-timer" onclick="switchTab('timer')">タイマー</button>
+    <button class="tab-btn" id="tab-sw" onclick="switchTab('stopwatch')">ストップウォッチ</button>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <div id="main">
+
+    <!-- ======== タイマーパネル ======== -->
+    <div class="panel active" id="panel-timer">
+
+      <!-- キャラ画像スペース（将来差し込み） -->
+      <div class="char-space">
+        <img class="char-placeholder" id="char-img-timer" src="" alt="">
+      </div>
+
+      <!-- モード切替 -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-minutes" onclick="setTimerMode('minutes')">分数指定</button>
+        <button class="mode-btn" id="mode-endtime" onclick="setTimerMode('endtime')">終了時刻指定</button>
+      </div>
+
+      <!-- 分数入力 -->
+      <div class="input-area" id="input-minutes">
+        <div class="input-label">時間（分）</div>
+        <div class="input-row">
+          <input type="number" id="minutes-input" min="1" max="999" placeholder="10" value="">
+          <span class="input-unit">分</span>
+        </div>
+        <div class="error-msg" id="minutes-error"></div>
+      </div>
+
+      <!-- 終了時刻入力 -->
+      <div class="input-area" id="input-endtime" style="display:none;">
+        <div class="input-label">終了時刻</div>
+        <div class="input-row">
+          <input type="time" id="endtime-input" value="">
+        </div>
+        <div class="error-msg" id="endtime-error"></div>
+      </div>
+
+      <!-- プリセット -->
+      <div class="preset-label">クイックスタート</div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="startPreset(5)">5分</button>
+        <button class="preset-btn" onclick="startPreset(10)">10分</button>
+        <button class="preset-btn" onclick="startPreset(20)">20分</button>
+        <button class="preset-btn" onclick="startPreset(30)">30分</button>
+        <button class="preset-btn" onclick="startPreset(60)">60分</button>
+      </div>
+
+      <hr class="section-sep">
+
+      <!-- プログレスリング -->
+      <div class="ring-container" id="ring-container">
+        <svg class="ring-svg" viewBox="0 0 260 260" id="ring-svg">
+          <circle class="ring-track" cx="130" cy="130" r="113"/>
+          <circle class="ring-progress" id="ring-progress" cx="130" cy="130" r="113"/>
+        </svg>
+        <div class="ring-center">
+          <span id="timer-display">--:--</span>
+          <div class="timer-status-label" id="timer-status">待機中</div>
+        </div>
+      </div>
+
+      <!-- 操作ボタン -->
+      <div class="control-row">
+        <button class="btn btn-primary" id="timer-start-btn" onclick="startTimer()">開始</button>
+        <button class="btn btn-secondary" id="timer-cancel-btn" onclick="cancelTimer()" disabled>キャンセル</button>
+        <button class="btn btn-secondary" id="timer-fs-btn" onclick="enterFullscreen()" disabled>全画面</button>
+        <button class="btn btn-secondary btn-mute" id="timer-mute-btn" onclick="toggleMute()" title="ミュート切替">🔊</button>
+      </div>
+
+      <!-- アラーム停止ボタン -->
+      <div id="alarm-stop-row">
+        <button class="btn btn-danger" style="width:100%;margin-top:0;" onclick="stopAlarm()">🔔 アラーム停止</button>
+      </div>
+    </div>
+
+    <!-- ======== ストップウォッチパネル ======== -->
+    <div class="panel" id="panel-sw">
+      <div class="sw-display-wrap">
+        <span id="sw-display">00:00.00</span>
+      </div>
+      <div class="control-row">
+        <button class="btn btn-primary" id="sw-start-btn" onclick="swStart()">開始</button>
+        <button class="btn btn-secondary" id="sw-stop-btn" onclick="swStop()" disabled>停止</button>
+        <button class="btn btn-secondary" id="sw-reset-btn" onclick="swReset()">リセット</button>
+      </div>
+    </div>
+
+  </div><!-- /#main -->
+
+  <!-- ======== 全画面オーバーレイ ======== -->
+  <div id="fullscreen-overlay">
+    <button id="fs-back-btn" onclick="exitFullscreen()">← 戻る</button>
+
+    <div id="fs-ring-container">
+      <svg id="fs-ring-svg" viewBox="0 0 300 300">
+        <circle id="fs-ring-track" cx="150" cy="150" r="130"/>
+        <circle id="fs-ring-progress" cx="150" cy="150" r="130"/>
+      </svg>
+      <div class="fs-center">
+        <span id="fs-time">--:--</span>
+        <div class="finished-label" id="fs-finished-label" style="display:none;">TIME UP</div>
+      </div>
+    </div>
+
+    <button id="fs-alarm-btn" onclick="stopAlarm()">🔔 アラーム停止</button>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ============================================================
+  // 定数
+  // ============================================================
+  const RING_R = 113;
+  const RING_CIRC = 2 * Math.PI * RING_R;
+  const FS_RING_R = 130;
+  const FS_RING_CIRC = 2 * Math.PI * FS_RING_R;
+
+  // ============================================================
+  // 状態
+  // ============================================================
+  let state = {
+    mode: 'timer',            // 'timer' | 'stopwatch'
+    timerMode: 'minutes',     // 'minutes' | 'endtime'
+    timerMinutes: '',
+    timerEndTime: '',
+    muted: false,
+    isFullscreen: false,
+
+    // タイマー実行状態
+    timerRunning: false,
+    timerEndTimestamp: null,  // ms
+    timerTotalSeconds: 0,
+    timerFinished: false,
+    timerAlarmActive: false,
+    timerIntervalId: null,
+
+    // ストップウォッチ
+    swRunning: false,
+    swStartTimestamp: null,
+    swElapsed: 0,             // ms (一時停止時の蓄積)
+    swIntervalId: null,
+  };
+
+  // ============================================================
+  // 永続化
+  // ============================================================
+  function saveSettings() {
+    try {
+      localStorage.setItem('highsto_timer', JSON.stringify({
+        mode: state.mode,
+        timerMode: state.timerMode,
+        timerMinutes: state.timerMinutes,
+        timerEndTime: state.timerEndTime,
+        muted: state.muted,
+      }));
+    } catch(e) {}
+  }
+
+  function loadSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('highsto_timer') || '{}');
+      if (saved.mode) state.mode = saved.mode;
+      if (saved.timerMode) state.timerMode = saved.timerMode;
+      if (saved.timerMinutes) state.timerMinutes = saved.timerMinutes;
+      if (saved.timerEndTime) state.timerEndTime = saved.timerEndTime;
+      if (typeof saved.muted === 'boolean') state.muted = saved.muted;
+    } catch(e) {}
+  }
+
+  // ============================================================
+  // 現在時刻表示（JST）
+  // ============================================================
+  const DAYS_JA = ['日', '月', '火', '水', '木', '金', '土'];
+
+  function updateClock() {
+    const now = new Date();
+    const toJST = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const jst = toJST(now);
+
+    const y = jst.getFullYear();
+    const M = String(jst.getMonth()+1).padStart(2,'0');
+    const d = String(jst.getDate()).padStart(2,'0');
+    const day = DAYS_JA[jst.getDay()];
+    const H = String(jst.getHours()).padStart(2,'0');
+    const m = String(jst.getMinutes()).padStart(2,'0');
+    const s = String(jst.getSeconds()).padStart(2,'0');
+
+    document.getElementById('current-date').textContent = `${y}年${M}月${d}日(${day})`;
+    document.getElementById('current-time').textContent = `${H}:${m}:${s}`;
+  }
+
+  // ============================================================
+  // タブ切替
+  // ============================================================
+  function switchTab(tab) {
+    state.mode = tab;
+    document.getElementById('tab-timer').classList.toggle('active', tab === 'timer');
+    document.getElementById('tab-sw').classList.toggle('active', tab === 'stopwatch');
+    document.getElementById('panel-timer').classList.toggle('active', tab === 'timer');
+    document.getElementById('panel-sw').classList.toggle('active', tab === 'stopwatch');
+    saveSettings();
+  }
+
+  // ============================================================
+  // タイマーモード切替
+  // ============================================================
+  function setTimerMode(mode) {
+    state.timerMode = mode;
+    document.getElementById('mode-minutes').classList.toggle('active', mode === 'minutes');
+    document.getElementById('mode-endtime').classList.toggle('active', mode === 'endtime');
+    document.getElementById('input-minutes').style.display = mode === 'minutes' ? '' : 'none';
+    document.getElementById('input-endtime').style.display = mode === 'endtime' ? '' : 'none';
+    clearErrors();
+    saveSettings();
+  }
+
+  function clearErrors() {
+    document.getElementById('minutes-error').textContent = '';
+    document.getElementById('endtime-error').textContent = '';
+  }
+
+  // ============================================================
+  // プリセット
+  // ============================================================
+  function startPreset(minutes) {
+    if (state.timerRunning || state.timerAlarmActive) return;
+    setTimerMode('minutes');
+    document.getElementById('minutes-input').value = minutes;
+    state.timerMinutes = minutes;
+    startTimerWithSeconds(minutes * 60);
+  }
+
+  // ============================================================
+  // タイマー開始バリデーション
+  // ============================================================
+  function startTimer() {
+    if (state.timerRunning || state.timerAlarmActive) return;
+    clearErrors();
+
+    if (state.timerMode === 'minutes') {
+      const raw = document.getElementById('minutes-input').value;
+      const val = parseInt(raw, 10);
+      if (!raw || isNaN(val) || val < 1) {
+        document.getElementById('minutes-error').textContent = '1以上の整数を入力してください';
+        return;
+      }
+      state.timerMinutes = val;
+      saveSettings();
+      startTimerWithSeconds(val * 60);
+
+    } else {
+      const timeStr = document.getElementById('endtime-input').value;
+      if (!timeStr) {
+        document.getElementById('endtime-error').textContent = '終了時刻を入力してください';
+        return;
+      }
+      const [hh, mm] = timeStr.split(':').map(Number);
+      const now = new Date();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+      const diffSec = Math.floor((end.getTime() - now.getTime()) / 1000);
+      if (diffSec <= 0) {
+        document.getElementById('endtime-error').textContent = '現在時刻より後の時刻を入力してください';
+        return;
+      }
+      state.timerEndTime = timeStr;
+      saveSettings();
+      startTimerWithSeconds(diffSec);
+    }
+  }
+
+  function startTimerWithSeconds(totalSec) {
+    state.timerRunning = true;
+    state.timerFinished = false;
+    state.timerTotalSeconds = totalSec;
+    state.timerEndTimestamp = Date.now() + totalSec * 1000;
+
+    updateTimerUI();
+    document.getElementById('timer-start-btn').disabled = true;
+    document.getElementById('timer-cancel-btn').disabled = false;
+    document.getElementById('timer-fs-btn').disabled = false;
+
+    state.timerIntervalId = setInterval(tickTimer, 250);
+    tickTimer();
+  }
+
+  // ============================================================
+  // タイマー刻み
+  // ============================================================
+  function tickTimer() {
+    if (!state.timerRunning) return;
+    const remaining = Math.max(0, Math.ceil((state.timerEndTimestamp - Date.now()) / 1000));
+
+    updateTimerDisplay(remaining, state.timerTotalSeconds);
+    syncFullscreenDisplay(remaining, state.timerTotalSeconds);
+
+    // 点滅演出（残り5秒以下かつ0より大きい）
+    if (remaining > 0 && remaining <= 5) {
+      document.body.classList.add('flashing');
+      document.getElementById('fullscreen-overlay').classList.add('flashing');
+    } else {
+      document.body.classList.remove('flashing');
+      document.getElementById('fullscreen-overlay').classList.remove('flashing');
+    }
+
+    if (remaining <= 0) {
+      finishTimer();
+    }
+  }
+
+  function updateTimerDisplay(remaining, total) {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    const timeStr = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('timer-display').textContent = timeStr;
+
+    const progress = total > 0 ? remaining / total : 0;
+    setRingProgress(progress, remaining);
+  }
+
+  function setRingProgress(progress, remaining) {
+    const offset = RING_CIRC * (1 - Math.max(0, Math.min(1, progress)));
+    const ring = document.getElementById('ring-progress');
+    ring.style.strokeDasharray = RING_CIRC;
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = (remaining > 0 && remaining <= 5) ? 'var(--accent-red)' : 'var(--ring-fill)';
+  }
+
+  function syncFullscreenDisplay(remaining, total) {
+    if (!state.isFullscreen) return;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    document.getElementById('fs-time').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    const progress = total > 0 ? remaining / total : 0;
+    const offset = FS_RING_CIRC * (1 - Math.max(0, Math.min(1, progress)));
+    const fsRing = document.getElementById('fs-ring-progress');
+    fsRing.style.strokeDasharray = FS_RING_CIRC;
+    fsRing.style.strokeDashoffset = offset;
+    fsRing.style.stroke = (remaining > 0 && remaining <= 5) ? 'var(--accent-red)' : 'var(--ring-fill)';
+  }
+
+  // ============================================================
+  // タイマー終了
+  // ============================================================
+  function finishTimer() {
+    clearInterval(state.timerIntervalId);
+    state.timerRunning = false;
+    state.timerFinished = true;
+    state.timerAlarmActive = true;
+    document.body.classList.remove('flashing');
+    document.getElementById('fullscreen-overlay').classList.remove('flashing');
+
+    // 表示固定
+    document.getElementById('timer-display').textContent = '00:00';
+    document.getElementById('timer-status').textContent = 'タイムアップ！';
+    setRingProgress(0, 0);
+    syncFullscreenDisplay(0, state.timerTotalSeconds);
+
+    // アラーム停止ボタン表示
+    document.getElementById('alarm-stop-row').style.display = '';
+    document.getElementById('fs-alarm-btn').style.display = '';
+    document.getElementById('fs-finished-label').style.display = '';
+
+    // アラーム
+    if (!state.muted) startAlarm();
+  }
+
+  function cancelTimer() {
+    clearInterval(state.timerIntervalId);
+    state.timerRunning = false;
+    state.timerFinished = false;
+    state.timerAlarmActive = false;
+    document.body.classList.remove('flashing');
+    document.getElementById('fullscreen-overlay').classList.remove('flashing');
+    stopAlarm();
+    updateTimerUI();
+  }
+
+  function updateTimerUI() {
+    document.getElementById('timer-display').textContent = '--:--';
+    document.getElementById('timer-status').textContent = '待機中';
+    document.getElementById('timer-start-btn').disabled = false;
+    document.getElementById('timer-cancel-btn').disabled = true;
+    document.getElementById('timer-fs-btn').disabled = true;
+    document.getElementById('alarm-stop-row').style.display = 'none';
+    document.getElementById('fs-alarm-btn').style.display = 'none';
+    document.getElementById('fs-finished-label').style.display = 'none';
+
+    const ring = document.getElementById('ring-progress');
+    ring.style.strokeDasharray = RING_CIRC;
+    ring.style.strokeDashoffset = RING_CIRC;
+  }
+
+  // ============================================================
+  // アラーム音 (Web Audio API)
+  // ============================================================
+  let audioCtx = null;
+  let alarmIntervalId = null;
+
+  function getAudioCtx() {
+    if (!audioCtx || audioCtx.state === 'closed') {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playBeepOnce() {
+    try {
+      const ctx = getAudioCtx();
+      const t = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
+      osc1.type = 'square'; osc1.frequency.setValueAtTime(880, t);
+      osc2.type = 'square'; osc2.frequency.setValueAtTime(660, t + 0.15);
+      gain.gain.setValueAtTime(0.25, t);
+      gain.gain.setValueAtTime(0.25, t + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc1.start(t); osc1.stop(t + 0.15);
+      osc2.start(t + 0.15); osc2.stop(t + 0.35);
+    } catch(e) {}
+  }
+
+  function startAlarm() {
+    playBeepOnce();
+    alarmIntervalId = setInterval(playBeepOnce, 1200);
+  }
+
+  function stopAlarm() {
+    clearInterval(alarmIntervalId);
+    state.timerAlarmActive = false;
+    document.getElementById('alarm-stop-row').style.display = 'none';
+    document.getElementById('fs-alarm-btn').style.display = 'none';
+    document.getElementById('fs-finished-label').style.display = 'none';
+    document.getElementById('timer-start-btn').disabled = false;
+    document.getElementById('timer-cancel-btn').disabled = true;
+  }
+
+  // ============================================================
+  // ミュート
+  // ============================================================
+  function toggleMute() {
+    state.muted = !state.muted;
+    document.getElementById('timer-mute-btn').textContent = state.muted ? '🔇' : '🔊';
+    if (state.muted) clearInterval(alarmIntervalId);
+    else if (state.timerAlarmActive) startAlarm();
+    saveSettings();
+  }
+
+  // ============================================================
+  // 全画面
+  // ============================================================
+  function enterFullscreen() {
+    if (!state.timerRunning && !state.timerAlarmActive && !state.timerFinished) return;
+    state.isFullscreen = true;
+    document.getElementById('fullscreen-overlay').classList.add('active');
+
+    // 初期表示
+    const remaining = state.timerRunning
+      ? Math.max(0, Math.ceil((state.timerEndTimestamp - Date.now()) / 1000))
+      : (state.timerFinished ? 0 : state.timerTotalSeconds);
+    syncFullscreenDisplay(remaining, state.timerTotalSeconds);
+
+    if (state.timerAlarmActive) {
+      document.getElementById('fs-alarm-btn').style.display = '';
+      document.getElementById('fs-finished-label').style.display = '';
+    }
+  }
+
+  function exitFullscreen() {
+    state.isFullscreen = false;
+    document.getElementById('fullscreen-overlay').classList.remove('active');
+    document.getElementById('fullscreen-overlay').classList.remove('flashing');
+  }
+
+  // ============================================================
+  // ストップウォッチ
+  // ============================================================
+  function swStart() {
+    if (state.swRunning) return;
+    state.swRunning = true;
+    state.swStartTimestamp = Date.now() - state.swElapsed;
+    document.getElementById('sw-start-btn').disabled = true;
+    document.getElementById('sw-stop-btn').disabled = false;
+    state.swIntervalId = setInterval(tickSW, 17); // ~60fps
+    tickSW();
+  }
+
+  function swStop() {
+    if (!state.swRunning) return;
+    state.swRunning = false;
+    state.swElapsed = Date.now() - state.swStartTimestamp;
+    clearInterval(state.swIntervalId);
+    document.getElementById('sw-start-btn').disabled = false;
+    document.getElementById('sw-stop-btn').disabled = true;
+  }
+
+  function swReset() {
+    clearInterval(state.swIntervalId);
+    state.swRunning = false;
+    state.swElapsed = 0;
+    state.swStartTimestamp = null;
+    document.getElementById('sw-display').textContent = '00:00.00';
+    document.getElementById('sw-start-btn').disabled = false;
+    document.getElementById('sw-stop-btn').disabled = true;
+  }
+
+  function tickSW() {
+    const elapsed = state.swRunning
+      ? Date.now() - state.swStartTimestamp
+      : state.swElapsed;
+    document.getElementById('sw-display').textContent = formatSWTime(elapsed);
+  }
+
+  function formatSWTime(ms) {
+    const totalCentis = Math.floor(ms / 10);
+    const centis = totalCentis % 100;
+    const totalSec = Math.floor(totalCentis / 100);
+    const secs = totalSec % 60;
+    const mins = Math.floor(totalSec / 60);
+    return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}.${String(centis).padStart(2,'0')}`;
+  }
+
+  // ============================================================
+  // 入力変更保存
+  // ============================================================
+  document.getElementById('minutes-input').addEventListener('input', function() {
+    state.timerMinutes = this.value;
+    saveSettings();
+  });
+
+  document.getElementById('endtime-input').addEventListener('change', function() {
+    state.timerEndTime = this.value;
+    saveSettings();
+  });
+
+  // ============================================================
+  // ページ復帰時の可視性チェック
+  // ============================================================
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && state.timerAlarmActive) {
+      document.getElementById('alarm-stop-row').style.display = '';
+    }
+  });
+
+  // ============================================================
+  // 初期化
+  // ============================================================
+  function init() {
+    loadSettings();
+
+    // タブ復元
+    switchTab(state.mode);
+
+    // タイマーモード復元
+    setTimerMode(state.timerMode);
+
+    // 入力値復元
+    if (state.timerMinutes) document.getElementById('minutes-input').value = state.timerMinutes;
+    if (state.timerEndTime) document.getElementById('endtime-input').value = state.timerEndTime;
+
+    // ミュート復元
+    document.getElementById('timer-mute-btn').textContent = state.muted ? '🔇' : '🔊';
+
+    // リング初期化
+    const ring = document.getElementById('ring-progress');
+    ring.style.strokeDasharray = RING_CIRC;
+    ring.style.strokeDashoffset = RING_CIRC;
+
+    const fsRing = document.getElementById('fs-ring-progress');
+    fsRing.style.strokeDasharray = FS_RING_CIRC;
+    fsRing.style.strokeDashoffset = FS_RING_CIRC;
+
+    // 現在時刻
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
+
+  init();
+  </script>
+</body>
+</html>
