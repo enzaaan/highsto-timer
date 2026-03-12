@@ -6,28 +6,18 @@
   <title>Highsto Timer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Design tokens
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
   :root {
-    --bg:         #07091b;
-    --card:       rgba(10, 14, 34, 0.70);
-    --card-b:     rgba(255, 255, 255, 0.065);
     --gold:       #c8a44a;
-    --gold-dim:   rgba(200, 164, 74, 0.16);
-    --gold-glow:  rgba(200, 164, 74, 0.22);
-    --text:       #dce2f0;
-    --text-dim:   #68789a;
-    --text-faint: #394265;
+    --gold-glow:  rgba(200,164,74,0.30);
     --danger:     #c96858;
-    --ring-track: rgba(255, 255, 255, 0.075);
-    --r-card:     22px;
-    --r-btn:      12px;
-    --r-input:    11px;
-    --shadow:     0 24px 72px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.035) inset;
+    --text:       rgba(255,255,255,0.95);
+    --dim:        rgba(255,255,255,0.52);
+    --faint:      rgba(255,255,255,0.30);
+    --ui-bg:      rgba(0,0,0,0.50);
+    --ui-bd:      rgba(255,255,255,0.12);
+    --rs:         272px;   /* ring size */
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,1161 +25,763 @@
 
   body {
     min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN', sans-serif;
+    overflow: hidden;
+    font-family: 'Inter', 'Hiragino Kaku Gothic ProN', sans-serif;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
   }
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Background
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  #bg {
+  /* ━━━ Background ━━━ */
+  #bg-a, #bg-b {
     position: fixed; inset: 0; z-index: 0;
+    background-size: cover;
+    background-position: center center;
+    transition: opacity 1.2s ease;
+  }
+  #bg-a { opacity: 1; }
+  #bg-b { opacity: 0; }
+
+  /* Vignette + readability overlay */
+  #ov {
+    position: fixed; inset: 0; z-index: 1;
     background:
-      radial-gradient(ellipse at 18% 14%, rgba(20, 32, 85, 0.88) 0%, transparent 52%),
-      radial-gradient(ellipse at 82% 88%, rgba(38, 16, 64, 0.52) 0%, transparent 48%),
-      radial-gradient(ellipse at 55% 48%, rgba(12, 18, 42, 0.4) 0%, transparent 65%),
-      var(--bg);
+      radial-gradient(ellipse at 50% 42%, transparent 30%, rgba(0,0,0,0.45) 100%),
+      rgba(0,0,0,0.28);
   }
 
-  /* キャラ差し込み予定エリア（右下の余白） */
-  #char-area {
-    position: fixed;
-    right: 0; bottom: 0;
-    width: 40vw; max-width: 520px;
-    height: 92vh;
-    z-index: 1;
-    pointer-events: none;
-    display: flex; align-items: flex-end; justify-content: flex-end;
-    /* 画像を入れるときは img タグを追加し opacity: 0.18 程度で配置 */
-  }
-
-  /* 残り5秒フラッシュ */
+  /* Last-5-sec flash */
   #flash {
     display: none;
     position: fixed; inset: 0; z-index: 2;
-    background: rgba(180, 60, 40, 0.22);
+    background: rgba(140,30,16,0.28);
     pointer-events: none;
-    animation: do-flash 0.65s infinite;
+    animation: blink 0.65s ease-in-out infinite;
   }
   #flash.on { display: block; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-  @keyframes do-flash {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+  /* ━━━ App shell ━━━ */
+  #app {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    pointer-events: none;   /* children set their own */
   }
+  #app > * { pointer-events: auto; }
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Header
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* ━━━ Header ━━━ */
   header {
-    position: relative; z-index: 10;
     display: flex; align-items: flex-start; justify-content: space-between;
-    padding: 28px 40px 0;
+    padding: 22px 26px 0;
     flex-shrink: 0;
   }
 
-  .h-left {}
-
-  .h-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.28em;
+  .logo-mark {
+    font-size: 0.68rem; font-weight: 800;
+    letter-spacing: 0.26em; text-transform: uppercase;
     color: var(--gold);
-    text-transform: uppercase;
-    margin-bottom: 4px;
+    text-shadow: 0 0 20px var(--gold-glow);
+    margin-bottom: 3px; line-height: 1;
   }
-
-  .h-sub {
-    font-size: 0.7rem;
-    color: var(--text-faint);
+  .logo-sub {
+    font-size: 0.58rem; color: var(--faint);
     letter-spacing: 0.08em;
   }
 
-  .h-right {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
+  .hclock { text-align: right; }
   #ct {
     display: block;
     font-family: 'Inter', sans-serif;
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.18rem; font-weight: 600;
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.04em;
-    color: var(--text);
-    line-height: 1;
-    margin-bottom: 4px;
+    letter-spacing: 0.04em; line-height: 1;
+    text-shadow: 0 1px 10px rgba(0,0,0,0.8);
+    margin-bottom: 3px;
+  }
+  #cd { font-size: 0.64rem; color: var(--dim); letter-spacing: 0.05em; }
+
+  /* ━━━ Center ━━━ */
+  .center {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 20px;
   }
 
-  #cd {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    letter-spacing: 0.06em;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Main
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  main {
-    position: relative; z-index: 10;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 28px 40px 40px;
-    min-height: 0;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Tabs
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  /* Tabs */
   .tabs {
     display: inline-flex;
-    background: rgba(0,0,0,0.28);
-    border: 1px solid var(--card-b);
+    background: var(--ui-bg);
+    border: 1px solid var(--ui-bd);
     border-radius: 40px;
-    padding: 4px;
-    gap: 3px;
-    margin-bottom: 28px;
-    align-self: flex-start;
+    padding: 4px; gap: 3px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-
   .tab {
-    padding: 8px 24px;
-    background: transparent;
-    border: none;
-    border-radius: 36px;
-    color: var(--text-dim);
-    font-family: inherit;
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: background 0.25s, color 0.25s;
+    padding: 7px 22px;
+    background: transparent; border: none; border-radius: 36px;
+    color: var(--dim);
+    font-family: inherit; font-size: 0.79rem; font-weight: 600;
+    letter-spacing: 0.06em; cursor: pointer;
+    transition: background 0.22s, color 0.22s;
+  }
+  .tab.active { background: var(--gold); color: #0a0b18; }
+
+  /* Status label */
+  #slbl {
+    font-size: 0.64rem; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--faint);
+    text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+    margin-bottom: 8px; min-height: 1em;
   }
 
-  .tab.active {
-    background: var(--gold);
-    color: #0a0b1a;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     2-column content
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .content {
-    display: flex;
-    gap: 36px;
-    align-items: center;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Left pane (settings card)
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .pane-left {
+  /* ━━━ Ring ━━━ */
+  .ring-wrap {
+    position: relative;
+    width: var(--rs); height: var(--rs);
+    display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
-    width: 268px;
-    background: var(--card);
-    backdrop-filter: blur(20px) saturate(1.4);
-    -webkit-backdrop-filter: blur(20px) saturate(1.4);
-    border: 1px solid var(--card-b);
-    border-radius: var(--r-card);
-    box-shadow: var(--shadow);
-    padding: 28px 24px 24px;
   }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Right pane (display)
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .pane-right {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 0;
+  .ring-svg {
+    position: absolute; inset: 0;
+    transform: rotate(-90deg); overflow: visible;
+    filter: drop-shadow(0 0 12px var(--gold-glow));
   }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Mode toggle
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .mode-toggle {
-    display: flex;
-    background: rgba(0,0,0,0.25);
-    border-radius: 9px;
-    padding: 3px;
-    gap: 2px;
-    margin-bottom: 22px;
+  .rt { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 5.5; }
+  .rp {
+    fill: none; stroke: var(--gold); stroke-width: 5.5; stroke-linecap: round;
+    transition: stroke-dashoffset 0.75s ease, stroke 0.4s;
   }
+  .ri { position: relative; z-index: 1; text-align: center; user-select: none; }
 
-  .mode-btn {
-    flex: 1;
-    padding: 7px 0;
-    background: transparent;
-    border: none;
-    border-radius: 7px;
-    color: var(--text-faint);
-    font-family: inherit;
-    font-size: 0.74rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-  }
-
-  .mode-btn.active {
-    background: rgba(255,255,255,0.09);
-    color: var(--text);
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Input fields
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .field { margin-bottom: 16px; }
-
-  .field-label {
+  #tdisp {
     display: block;
-    font-size: 0.66rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-bottom: 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 2.85rem; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em; line-height: 1;
+    text-shadow: 0 2px 28px rgba(0,0,0,0.75);
+  }
+  #tsub {
+    font-size: 0.56rem; color: var(--faint);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    margin-top: 7px; min-height: 1em;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9);
   }
 
-  .field-row { display: flex; align-items: center; gap: 10px; }
+  /* ━━━ Timer controls (float below ring, no card) ━━━ */
+  #tctrl {
+    margin-top: 16px;
+    width: 100%; max-width: 300px;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
 
-  input[type="number"],
-  input[type="time"] {
-    flex: 1;
-    width: 100%;
-    background: rgba(0,0,0,0.32);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: var(--r-input);
+  /* Mode toggle */
+  .mtgl {
+    display: flex; width: 100%;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd);
+    border-radius: 9px; padding: 3px; gap: 2px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .mbtn {
+    flex: 1; padding: 7px 0;
+    background: transparent; border: none; border-radius: 7px;
+    color: var(--faint);
+    font-family: inherit; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.04em; cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+  }
+  .mbtn.active { background: rgba(255,255,255,0.13); color: var(--text); }
+
+  /* Input row */
+  .irow { display: flex; align-items: center; gap: 8px; width: 100%; }
+  input[type="number"], input[type="time"] {
+    flex: 1; width: 100%;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd); border-radius: 10px;
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    font-size: 1.55rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    padding: 10px 14px;
-    text-align: center;
+    font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    padding: 9px 14px; text-align: center;
     transition: border-color 0.2s, box-shadow 0.2s;
-    -webkit-appearance: none;
-    appearance: none;
+    -webkit-appearance: none; appearance: none;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-
-  input[type="number"]:focus,
-  input[type="time"]:focus {
+  input:focus {
     outline: none;
-    border-color: rgba(200,164,74,0.5);
-    box-shadow: 0 0 0 3px var(--gold-dim);
+    border-color: rgba(200,164,74,0.6);
+    box-shadow: 0 0 0 3px rgba(200,164,74,0.14);
   }
-
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   input[type="number"] { -moz-appearance: textfield; }
+  .iunit { font-size: 0.78rem; color: var(--dim); flex-shrink: 0; }
+  .ferr  { font-size: 0.68rem; color: var(--danger); min-height: 1em; align-self: flex-start; }
 
-  .field-unit {
-    font-size: 0.8rem;
-    color: var(--text-dim);
-    flex-shrink: 0;
-    letter-spacing: 0.04em;
-  }
-
-  .field-err {
-    font-size: 0.7rem;
-    color: var(--danger);
-    margin-top: 5px;
-    min-height: 1em;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Presets
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .preset-label {
-    font-size: 0.64rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-bottom: 8px;
-  }
-
-  .presets {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 22px;
-  }
-
-  .preset {
-    flex: 1;
-    padding: 8px 2px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 9px;
-    color: var(--text-dim);
-    font-family: inherit;
-    font-size: 0.74rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+  /* Presets */
+  .psets { display: flex; gap: 5px; width: 100%; }
+  .pst {
+    flex: 1; padding: 7px 2px;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd); border-radius: 8px;
+    color: var(--dim);
+    font-family: inherit; font-size: 0.71rem; font-weight: 600;
     cursor: pointer;
-    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
   }
+  .pst:hover { background: rgba(200,164,74,0.22); border-color: rgba(200,164,74,0.4); color: var(--gold); }
 
-  .preset:hover {
-    background: var(--gold-dim);
-    border-color: rgba(200,164,74,0.28);
-    color: var(--gold);
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Divider
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .sep {
-    border: none;
-    border-top: 1px solid rgba(255,255,255,0.055);
-    margin: 20px 0;
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Buttons
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
-  .btn-row-sub { display: flex; gap: 8px; justify-content: flex-end; }
-
+  /* Buttons */
+  .brow { display: flex; gap: 7px; width: 100%; }
   .btn {
-    border: none;
-    border-radius: var(--r-btn);
-    font-family: inherit;
-    font-weight: 600;
-    cursor: pointer;
-    transition: filter 0.15s, opacity 0.15s, background 0.15s;
-    letter-spacing: 0.04em;
+    border: none; border-radius: 11px;
+    font-family: inherit; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.04em;
+    transition: filter 0.15s, opacity 0.15s;
   }
   .btn:disabled { opacity: 0.28; cursor: not-allowed; }
 
-  /* Primary: gold gradient */
-  .btn-primary {
-    flex: 2;
-    padding: 13px 12px;
-    background: linear-gradient(135deg, #c8a44a 0%, #a8842e 100%);
-    color: #0b0d1e;
-    font-size: 0.9rem;
-    font-weight: 700;
+  .btn-go {
+    flex: 2; padding: 13px 10px;
+    background: linear-gradient(140deg, #d4af52 0%, #a8832c 100%);
+    color: #09090f; font-size: 0.9rem; font-weight: 700;
   }
-  .btn-primary:not(:disabled):hover { filter: brightness(1.1); }
+  .btn-go:not(:disabled):hover { filter: brightness(1.1); }
 
-  /* Secondary: ghost */
   .btn-ghost {
-    flex: 1;
-    padding: 13px 8px;
-    background: rgba(255,255,255,0.055);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: var(--text-dim);
-    font-size: 0.84rem;
+    flex: 1; padding: 13px 8px;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd);
+    color: var(--dim); font-size: 0.82rem;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  .btn-ghost:not(:disabled):hover {
-    background: rgba(255,255,255,0.09);
-    color: var(--text);
-  }
+  .btn-ghost:not(:disabled):hover { background: rgba(0,0,0,0.65); color: var(--text); }
 
-  /* Utility icon buttons */
   .btn-util {
     padding: 10px 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    color: var(--text-faint);
-    font-size: 0.82rem;
-    border-radius: 10px;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd);
+    color: var(--faint); font-size: 0.72rem; border-radius: 9px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  .btn-util:not(:disabled):hover {
-    background: rgba(255,255,255,0.08);
-    color: var(--text-dim);
+  .btn-util:not(:disabled):hover { background: rgba(0,0,0,0.65); color: var(--dim); }
+
+  .btn-alm {
+    width: 100%; padding: 13px;
+    background: rgba(196,96,80,0.82); color: #fff;
+    font-size: 0.9rem; font-weight: 700;
+    animation: apls 1.1s ease-in-out infinite;
   }
+  @keyframes apls { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
 
-  /* Danger */
-  .btn-danger {
-    width: 100%;
-    padding: 13px;
-    margin-top: 10px;
-    background: rgba(201,104,88,0.75);
-    color: #fff;
-    font-size: 0.88rem;
-    font-weight: 700;
-    border-radius: var(--r-btn);
+  /* ━━━ Stopwatch ━━━ */
+  #sw-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 18px;
+    width: 100%; max-width: 300px;
   }
-  .btn-danger:hover { background: rgba(201,104,88,0.92); }
-
-  #alarm-row { display: none; }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Ring (normal view)
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  .ring-wrap {
-    position: relative;
-    width: 260px; height: 260px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 20px;
-  }
-
-  .ring-svg {
-    position: absolute; inset: 0;
-    transform: rotate(-90deg);
-  }
-
-  .ring-track {
-    fill: none;
-    stroke: var(--ring-track);
-    stroke-width: 8;
-  }
-
-  .ring-prog {
-    fill: none;
-    stroke: var(--gold);
-    stroke-width: 8;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.7s ease, stroke 0.4s;
-    filter: drop-shadow(0 0 8px var(--gold-glow));
-  }
-
-  .ring-inner {
-    position: relative; z-index: 1;
-    text-align: center;
-    user-select: none;
-  }
-
-  #timer-display {
-    display: block;
+  #swdisp {
     font-family: 'Inter', sans-serif;
-    font-size: 3.1rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-    line-height: 1;
-    color: var(--text);
-    text-shadow: 0 0 40px var(--gold-glow);
-  }
-
-  #timer-status {
-    margin-top: 8px;
-    font-size: 0.65rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Stopwatch display (right pane)
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  #sw-display {
-    font-family: 'Inter', sans-serif;
-    font-size: 4.2rem;
-    font-weight: 800;
+    font-size: 3.7rem; font-weight: 800;
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.05em;
-    color: var(--text);
-    user-select: none;
+    text-shadow: 0 2px 28px rgba(0,0,0,0.75);
   }
 
-  /* Stopwatch controls in left pane */
-  .sw-pane-inner {
-    padding-top: 8px;
+  /* ━━━ Footer / bg selector ━━━ */
+  footer {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 22px 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, transparent 100%);
   }
 
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Fullscreen overlay
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  #fullscreen {
+  .bglist {
+    display: flex; gap: 8px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .bglist::-webkit-scrollbar { display: none; }
+
+  .bgsw {
+    flex-shrink: 0;
+    width: 56px; height: 42px; border-radius: 8px;
+    background-size: cover; background-position: center;
+    border: 2px solid transparent; cursor: pointer;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+  }
+  .bgsw:hover { transform: scale(1.08); }
+  .bgsw.on { border-color: rgba(255,255,255,0.88); box-shadow: 0 0 14px rgba(255,255,255,0.26); }
+
+  .futil { display: flex; gap: 8px; flex-shrink: 0; margin-left: 12px; }
+
+  /* ━━━ Fullscreen mode ━━━ */
+  #app.fs header,
+  #app.fs footer,
+  #app.fs .tabs,
+  #app.fs #slbl,
+  #app.fs #tctrl { display: none !important; }
+
+  #app.fs .center { padding: 0; pointer-events: none; }
+  #app.fs .center > * { pointer-events: auto; }
+
+  #app.fs .ring-wrap {
+    width: min(66vmin, 460px) !important;
+    height: min(66vmin, 460px) !important;
+  }
+  #app.fs #tdisp { font-size: clamp(4rem, 13vmin, 8.5rem) !important; }
+
+  /* FS overlay controls */
+  #fsui {
     display: none;
-    position: fixed; inset: 0; z-index: 500;
-    background:
-      radial-gradient(ellipse at 18% 14%, rgba(20, 32, 85, 0.88) 0%, transparent 52%),
-      radial-gradient(ellipse at 82% 88%, rgba(38, 16, 64, 0.52) 0%, transparent 48%),
-      #07091b;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0; z-index: 20;
+    pointer-events: none;
   }
-  #fullscreen.on { display: flex; }
-
   #fs-back {
-    position: absolute; top: 24px; right: 28px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 10px;
-    color: var(--text-dim);
-    font-family: inherit;
-    font-size: 0.78rem;
-    font-weight: 500;
-    letter-spacing: 0.06em;
-    padding: 9px 18px;
-    cursor: pointer;
+    position: absolute; top: 22px; right: 24px; pointer-events: auto;
+    background: var(--ui-bg); border: 1px solid var(--ui-bd); border-radius: 9px;
+    color: var(--dim);
+    font-family: inherit; font-size: 0.75rem; font-weight: 500;
+    letter-spacing: 0.06em; padding: 8px 18px; cursor: pointer;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     transition: background 0.2s, color 0.2s;
   }
-  #fs-back:hover { background: rgba(255,255,255,0.11); color: var(--text); }
+  #fs-back:hover { background: rgba(0,0,0,0.7); color: var(--text); }
 
-  .fs-ring-wrap {
-    position: relative;
-    width: min(62vmin, 460px);
-    height: min(62vmin, 460px);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 28px;
+  #fs-alm {
+    display: none; pointer-events: auto;
+    position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+    background: rgba(196,96,80,0.9); border: none; border-radius: 14px;
+    color: #fff; font-family: inherit; font-size: 1rem; font-weight: 700;
+    letter-spacing: 0.06em; padding: 15px 52px; cursor: pointer;
+    white-space: nowrap;
+    animation: apls 1.1s ease-in-out infinite;
   }
 
-  #fs-ring-svg {
-    position: absolute; inset: 0;
-    transform: rotate(-90deg);
-    filter: drop-shadow(0 0 18px var(--gold-glow)) drop-shadow(0 0 40px rgba(200,164,74,0.12));
+  /* ━━━ Responsive ━━━ */
+  @media (max-width: 480px) {
+    :root { --rs: 218px; }
+    header { padding: 15px 18px 0; }
+    #ct { font-size: 0.98rem; }
+    .logo-mark { font-size: 0.6rem; }
+    .tab { padding: 6px 16px; font-size: 0.76rem; }
+    .tabs { margin-bottom: 10px; }
+    #tdisp { font-size: 2.25rem !important; }
+    #swdisp { font-size: 2.9rem; }
+    footer { padding: 8px 16px 16px; }
+    .bgsw { width: 48px; height: 36px; }
+    #tctrl { max-width: 272px; gap: 7px; margin-top: 12px; }
   }
-
-  #fs-ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 5; }
-  #fs-ring-prog {
-    fill: none;
-    stroke: var(--gold);
-    stroke-width: 5;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.7s ease, stroke 0.4s;
-  }
-
-  .fs-inner {
-    position: relative; z-index: 1;
-    text-align: center;
-    user-select: none;
-  }
-
-  #fs-time {
-    display: block;
-    font-family: 'Inter', sans-serif;
-    font-size: clamp(4.8rem, 16vmin, 12rem);
-    font-weight: 900;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.03em;
-    line-height: 1;
-    color: var(--text);
-    text-shadow: 0 0 80px var(--gold-glow), 0 0 140px rgba(200,164,74,0.1);
-  }
-
-  #fs-timeup {
-    display: none;
-    margin-top: 14px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.9;
-  }
-
-  #fs-alarm-btn {
-    display: none;
-    position: absolute;
-    bottom: 60px;
-    background: rgba(201,104,88,0.82);
-    border: none;
-    border-radius: 14px;
-    color: #fff;
-    font-family: inherit;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    padding: 16px 52px;
-    cursor: pointer;
-    animation: alarm-pulse 1.1s ease-in-out infinite;
-  }
-
-  @keyframes alarm-pulse {
-    0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201,104,88,0.4); }
-    50% { transform: scale(1.025); box-shadow: 0 0 0 10px rgba(201,104,88,0); }
-  }
-
-  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     Responsive – mobile (< 700px)
-  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-  @media (max-width: 700px) {
-    header { padding: 20px 20px 0; }
-    main { padding: 20px 20px 32px; }
-
-    .h-title { font-size: 0.7rem; }
-    #ct { font-size: 1.05rem; }
-
-    .tabs { margin-bottom: 20px; }
-    .tab { padding: 7px 18px; font-size: 0.78rem; }
-
-    .content {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 24px;
-    }
-
-    /* On mobile: right pane (display) comes first visually */
-    .pane-right { order: -1; }
-    .pane-left { width: 100%; }
-
-    .ring-wrap { width: 220px; height: 220px; margin: 0 auto 16px; }
-    #timer-display { font-size: 2.6rem; }
-    #sw-display { font-size: 3.2rem; }
-  }
-
-  /* Compact height */
-  @media (max-height: 680px) {
-    header { padding-top: 14px; }
-    main { padding-top: 16px; padding-bottom: 20px; }
-    .tabs { margin-bottom: 16px; }
-    .ring-wrap { width: 210px; height: 210px; }
-    #timer-display { font-size: 2.6rem; }
-    .sep { margin: 14px 0; }
+  @media (max-height: 640px) {
+    :root { --rs: 194px; }
+    header { padding: 11px 20px 0; }
+    .tabs { margin-bottom: 8px; }
+    #slbl { margin-bottom: 4px; }
+    #tdisp { font-size: 2.1rem !important; }
+    #tctrl { gap: 6px; margin-top: 10px; }
+    .btn-go, .btn-ghost { padding: 10px 8px; }
+    .pst { padding: 6px 2px; }
   }
   </style>
 </head>
 <body>
 
-<div id="bg"></div>
-<div id="char-area"></div>
+<!-- Backgrounds (always full-screen) -->
+<div id="bg-a"></div>
+<div id="bg-b"></div>
+<div id="ov"></div>
 <div id="flash"></div>
 
-<!-- ━━━━ Header ━━━━ -->
-<header>
-  <div class="h-left">
-    <div class="h-title">Highsto Timer</div>
-    <div class="h-sub">集中と対戦の時間管理</div>
-  </div>
-  <div class="h-right">
-    <span id="ct">00:00:00</span>
-    <span id="cd"></span>
-  </div>
-</header>
-
-<!-- ━━━━ Main ━━━━ -->
-<main>
-  <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab active" id="tab-timer" onclick="switchTab('timer')">タイマー</button>
-    <button class="tab" id="tab-sw" onclick="switchTab('sw')">ストップウォッチ</button>
-  </div>
-
-  <!-- 2-column layout -->
-  <div class="content">
-
-    <!-- Left: settings card -->
-    <div class="pane-left">
-
-      <!-- ── Timer pane ── -->
-      <div id="p-timer">
-        <!-- Mode toggle -->
-        <div class="mode-toggle">
-          <button class="mode-btn active" id="m-min" onclick="setMode('min')">分数指定</button>
-          <button class="mode-btn" id="m-end" onclick="setMode('end')">終了時刻指定</button>
-        </div>
-
-        <!-- Minutes input -->
-        <div class="field" id="f-min">
-          <label class="field-label" for="inp-min">設定時間</label>
-          <div class="field-row">
-            <input type="number" id="inp-min" min="1" max="999" placeholder="10">
-            <span class="field-unit">分</span>
-          </div>
-          <div class="field-err" id="err-min"></div>
-        </div>
-
-        <!-- End-time input -->
-        <div class="field" id="f-end" style="display:none">
-          <label class="field-label" for="inp-end">終了時刻</label>
-          <div class="field-row">
-            <input type="time" id="inp-end">
-          </div>
-          <div class="field-err" id="err-end"></div>
-        </div>
-
-        <!-- Presets -->
-        <div class="preset-label">クイックスタート</div>
-        <div class="presets">
-          <button class="preset" onclick="doPreset(5)">5分</button>
-          <button class="preset" onclick="doPreset(10)">10分</button>
-          <button class="preset" onclick="doPreset(20)">20分</button>
-          <button class="preset" onclick="doPreset(30)">30分</button>
-          <button class="preset" onclick="doPreset(60)">60分</button>
-        </div>
-
-        <hr class="sep">
-
-        <!-- Main controls -->
-        <div class="btn-row">
-          <button class="btn btn-primary" id="btn-start" onclick="startTimer()">開始</button>
-          <button class="btn btn-ghost" id="btn-cancel" onclick="cancelTimer()" disabled>キャンセル</button>
-        </div>
-
-        <!-- Utility controls -->
-        <div class="btn-row-sub">
-          <button class="btn btn-util" id="btn-mute" onclick="toggleMute()" title="ミュート切替">🔊 ミュート</button>
-          <button class="btn btn-util" id="btn-fs" onclick="enterFS()" disabled title="全画面表示">⛶ 全画面</button>
-        </div>
-
-        <!-- Alarm stop -->
-        <div id="alarm-row">
-          <button class="btn btn-danger" onclick="stopAlarm()">🔔 アラーム停止</button>
-        </div>
-      </div><!-- /#p-timer -->
-
-      <!-- ── SW pane ── -->
-      <div id="p-sw" style="display:none">
-        <div class="sw-pane-inner">
-          <hr class="sep" style="margin-top:0">
-          <div class="btn-row">
-            <button class="btn btn-primary" id="sw-start" onclick="swStart()">開始</button>
-            <button class="btn btn-ghost" id="sw-stop" onclick="swStop()" disabled>停止</button>
-          </div>
-          <div class="btn-row" style="margin-top:8px">
-            <button class="btn btn-ghost" style="flex:1" id="sw-reset" onclick="swReset()">リセット</button>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /.pane-left -->
-
-    <!-- Right: display area -->
-    <div class="pane-right">
-
-      <!-- Timer display -->
-      <div id="disp-timer">
-        <div class="ring-wrap">
-          <svg class="ring-svg" viewBox="0 0 260 260">
-            <circle class="ring-track" cx="130" cy="130" r="116"/>
-            <circle class="ring-prog" id="ring" cx="130" cy="130" r="116"/>
-          </svg>
-          <div class="ring-inner">
-            <span id="timer-display">--:--</span>
-            <div id="timer-status">待機中</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stopwatch display -->
-      <div id="disp-sw" style="display:none">
-        <span id="sw-display">00:00.00</span>
-      </div>
-
-    </div><!-- /.pane-right -->
-  </div><!-- /.content -->
-</main>
-
-<!-- ━━━━ Fullscreen ━━━━ -->
-<div id="fullscreen">
+<!-- Fullscreen UI overlay -->
+<div id="fsui">
   <button id="fs-back" onclick="exitFS()">戻る</button>
-
-  <div class="fs-ring-wrap">
-    <svg id="fs-ring-svg" viewBox="0 0 300 300">
-      <circle id="fs-ring-track" cx="150" cy="150" r="135"/>
-      <circle id="fs-ring-prog" cx="150" cy="150" r="135"/>
-    </svg>
-    <div class="fs-inner">
-      <span id="fs-time">--:--</span>
-      <div id="fs-timeup">TIME UP</div>
-    </div>
-  </div>
-
-  <button id="fs-alarm-btn" onclick="stopAlarm()">🔔 アラーム停止</button>
+  <button id="fs-alm" onclick="stopAlarm()">🔔 アラーム停止</button>
 </div>
+
+<!-- App -->
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="logo-mark">Highsto Timer</div>
+      <div class="logo-sub">集中と対戦の時間管理</div>
+    </div>
+    <div class="hclock">
+      <span id="ct">00:00:00</span>
+      <span id="cd"></span>
+    </div>
+  </header>
+
+  <!-- Center area -->
+  <div class="center">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" id="tab-t" onclick="sw('t')">タイマー</button>
+      <button class="tab"        id="tab-s" onclick="sw('s')">ストップウォッチ</button>
+    </div>
+
+    <!-- ══ TIMER ══ -->
+    <div id="at">
+      <div id="slbl">待機中</div>
+
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 300 300">
+          <circle class="rt" cx="150" cy="150" r="132"/>
+          <circle class="rp" id="rp"  cx="150" cy="150" r="132"/>
+        </svg>
+        <div class="ri">
+          <span id="tdisp">--:--</span>
+          <div id="tsub"></div>
+        </div>
+      </div>
+
+      <div id="tctrl">
+
+        <!-- IDLE -->
+        <div id="ci">
+          <div class="mtgl">
+            <button class="mbtn active" id="m-m" onclick="setM('m')">分数指定</button>
+            <button class="mbtn"        id="m-e" onclick="setM('e')">終了時刻指定</button>
+          </div>
+          <div id="f-m" class="irow">
+            <input type="number" id="n-m" min="1" max="999" placeholder="10">
+            <span class="iunit">分</span>
+          </div>
+          <div id="f-e" class="irow" style="display:none">
+            <input type="time" id="n-e">
+          </div>
+          <div class="ferr" id="ferr"></div>
+          <div class="psets">
+            <button class="pst" onclick="doPre(5)">5分</button>
+            <button class="pst" onclick="doPre(10)">10分</button>
+            <button class="pst" onclick="doPre(20)">20分</button>
+            <button class="pst" onclick="doPre(30)">30分</button>
+            <button class="pst" onclick="doPre(60)">60分</button>
+          </div>
+          <div class="brow">
+            <button class="btn btn-go" onclick="startT()">開始</button>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btn-util" id="bmute" onclick="togMute()">🔊 ミュート</button>
+          </div>
+        </div>
+
+        <!-- RUNNING -->
+        <div id="cr" style="display:none">
+          <div class="brow">
+            <button class="btn btn-ghost" style="flex:1" onclick="cancelT()">キャンセル</button>
+            <button class="btn btn-util"  style="padding:13px 18px;" onclick="enterFS()">⛶ 全画面</button>
+          </div>
+        </div>
+
+        <!-- ALARM -->
+        <div id="ca" style="display:none">
+          <div class="brow">
+            <button class="btn btn-alm" onclick="stopAlarm()">🔔 アラーム停止</button>
+          </div>
+        </div>
+
+      </div><!-- #tctrl -->
+    </div><!-- #at -->
+
+    <!-- ══ STOPWATCH ══ -->
+    <div id="as" style="display:none">
+      <div id="sw-wrap">
+        <span id="swdisp">00:00.00</span>
+        <div class="brow">
+          <button class="btn btn-go"    id="sw-s"  onclick="swSt()">開始</button>
+          <button class="btn btn-ghost" id="sw-p"  onclick="swPa()" disabled>停止</button>
+          <button class="btn btn-ghost" id="sw-r"  onclick="swRe()">リセット</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .center -->
+
+  <!-- Footer: background picker -->
+  <footer>
+    <div class="bglist" id="bglist"></div>
+    <div class="futil" id="futil"></div>
+  </footer>
+
+</div><!-- #app -->
 
 <script>
 'use strict';
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Ring constants
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-const RING_R = 116, RING_C = +(2 * Math.PI * RING_R).toFixed(2);  // ≈ 729.0
-const FS_R   = 135, FS_C   = +(2 * Math.PI * FS_R).toFixed(2);    // ≈ 848.2
+/* ── Ring geometry ── */
+const RC = 132, CIRC = +(2 * Math.PI * RC).toFixed(2); // ≈ 829.4
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   State
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ── Backgrounds ── */
+const BGS = [
+  { id:'b1', n:'ジェンキンス', s:'background/ジェンキンス.png' },
+  { id:'b2', n:'全員集合',     s:'background/全員集合.png'     },
+  { id:'b3', n:'坂本龍馬',     s:'background/坂本龍馬.png'     },
+  { id:'b4', n:'沖田総司',     s:'background/沖田総司.png'     },
+];
+let bgLay = 'a';
+
+function buildPicker() {
+  const list = el('bglist');
+  BGS.forEach(b => {
+    const d = document.createElement('div');
+    d.className = 'bgsw' + (b.id === S.bg ? ' on' : '');
+    d.dataset.id = b.id;
+    d.style.backgroundImage = `url("${b.s}")`;
+    d.title = b.n;
+    d.onclick = () => changeBg(b, true);
+    list.appendChild(d);
+  });
+}
+
+function changeBg(b, anim) {
+  S.bg = b.id;
+  const url = `url("${b.s}")`;
+  if (!anim) {
+    el('bg-a').style.backgroundImage = url;
+    bgLay = 'a';
+  } else {
+    const nx = bgLay === 'a' ? 'b' : 'a';
+    const en = el('bg-' + nx), ec = el('bg-' + bgLay);
+    en.style.transition = 'none'; en.style.opacity = '0';
+    en.style.backgroundImage = url;
+    en.getBoundingClientRect();
+    en.style.transition = 'opacity 1.1s ease'; en.style.opacity = '1';
+    ec.style.transition = 'opacity 1.1s ease'; ec.style.opacity = '0';
+    bgLay = nx;
+  }
+  document.querySelectorAll('.bgsw').forEach(d =>
+    d.classList.toggle('on', d.dataset.id === b.id));
+  save();
+}
+
+/* ── State ── */
 let S = {
-  tab: 'timer',
-  mode: 'min',
-  min: '',
-  end: '',
-  muted: false,
-
-  running: false,
-  endTs: 0,
-  totalSec: 0,
-  finished: false,
-  alarmOn: false,
-  tickId: null,
-
-  isFS: false,
-
-  swRunning: false,
-  swStartTs: 0,
-  swElapsed: 0,
-  swTickId: null,
+  tab:'t', mode:'m', min:'', end:'', muted:false, bg:'b1',
+  run:false, endTs:0, total:0, fin:false, alm:false, tid:null,
+  swRun:false, swTs:0, swEl:0, swTid:null,
+  isFS:false,
 };
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Persist
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function persist() {
+/* ── Persist ── */
+function save() {
+  try { localStorage.setItem('hst6', JSON.stringify(
+    {tab:S.tab,mode:S.mode,min:S.min,end:S.end,muted:S.muted,bg:S.bg}
+  )); } catch(e) {}
+}
+function load() {
   try {
-    localStorage.setItem('hst3', JSON.stringify({
-      tab: S.tab, mode: S.mode,
-      min: S.min, end: S.end, muted: S.muted,
-    }));
+    const d = JSON.parse(localStorage.getItem('hst6')||'{}');
+    if(d.tab)  S.tab  = d.tab;
+    if(d.mode) S.mode = d.mode;
+    if(d.min)  S.min  = d.min;
+    if(d.end)  S.end  = d.end;
+    if(typeof d.muted==='boolean') S.muted = d.muted;
+    if(d.bg)   S.bg   = d.bg;
   } catch(e) {}
 }
 
-function restore() {
-  try {
-    const d = JSON.parse(localStorage.getItem('hst3') || '{}');
-    if (d.tab)  S.tab  = d.tab;
-    if (d.mode) S.mode = d.mode;
-    if (d.min)  S.min  = d.min;
-    if (d.end)  S.end  = d.end;
-    if (typeof d.muted === 'boolean') S.muted = d.muted;
-  } catch(e) {}
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Clock (JST)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-const DAYS = ['日','月','火','水','木','金','土'];
-const p2 = n => String(n).padStart(2, '0');
-
+/* ── Clock ── */
+const WD = ['日','月','火','水','木','金','土'];
+const p2 = n => String(n).padStart(2,'0');
 function clock() {
-  const jst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-  document.getElementById('ct').textContent =
-    `${p2(jst.getHours())}:${p2(jst.getMinutes())}:${p2(jst.getSeconds())}`;
-  document.getElementById('cd').textContent =
-    `${jst.getFullYear()}/${p2(jst.getMonth()+1)}/${p2(jst.getDate())}(${DAYS[jst.getDay()]})`;
+  const j = new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Tokyo'}));
+  el('ct').textContent = `${p2(j.getHours())}:${p2(j.getMinutes())}:${p2(j.getSeconds())}`;
+  el('cd').textContent = `${j.getFullYear()}/${p2(j.getMonth()+1)}/${p2(j.getDate())}(${WD[j.getDay()]})`;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Tab / Mode switching
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function switchTab(tab) {
-  S.tab = tab;
-  const isTimer = tab === 'timer';
-  document.getElementById('tab-timer').classList.toggle('active', isTimer);
-  document.getElementById('tab-sw').classList.toggle('active', !isTimer);
-  document.getElementById('p-timer').style.display   = isTimer ? '' : 'none';
-  document.getElementById('p-sw').style.display      = isTimer ? 'none' : '';
-  document.getElementById('disp-timer').style.display = isTimer ? '' : 'none';
-  document.getElementById('disp-sw').style.display    = isTimer ? 'none' : '';
-  persist();
+/* ── Tab ── */
+function sw(t) {
+  S.tab = t;
+  el('tab-t').classList.toggle('active', t==='t');
+  el('tab-s').classList.toggle('active', t==='s');
+  el('at').style.display = t==='t' ? '' : 'none';
+  el('as').style.display = t==='s' ? '' : 'none';
+  save();
 }
 
-function setMode(mode) {
-  S.mode = mode;
-  document.getElementById('m-min').classList.toggle('active', mode === 'min');
-  document.getElementById('m-end').classList.toggle('active', mode === 'end');
-  document.getElementById('f-min').style.display = mode === 'min' ? '' : 'none';
-  document.getElementById('f-end').style.display = mode === 'end' ? '' : 'none';
-  clearErrs();
-  persist();
+/* ── Timer mode ── */
+function setM(m) {
+  S.mode = m;
+  el('m-m').classList.toggle('active', m==='m');
+  el('m-e').classList.toggle('active', m==='e');
+  el('f-m').style.display = m==='m' ? '' : 'none';
+  el('f-e').style.display = m==='e' ? '' : 'none';
+  el('ferr').textContent = '';
+  save();
 }
 
-function clearErrs() {
-  document.getElementById('err-min').textContent = '';
-  document.getElementById('err-end').textContent = '';
+/* ── Timer control state ── */
+function setState(s) {
+  el('ci').style.display = s==='idle'    ? '' : 'none';
+  el('cr').style.display = s==='running' ? '' : 'none';
+  el('ca').style.display = s==='alarm'   ? '' : 'none';
+  const L = {idle:'待機中', running:'残り時間', alarm:'TIME UP'};
+  el('slbl').textContent = L[s] || '';
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Timer – start / validate
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function doPreset(min) {
-  if (S.running || S.alarmOn) return;
-  setMode('min');
-  document.getElementById('inp-min').value = min;
-  S.min = min;
-  startWith(min * 60);
+/* ── Timer ── */
+function doPre(m) {
+  if (S.run || S.alm) return;
+  setM('m'); el('n-m').value = m; S.min = m;
+  go(m * 60);
 }
 
-function startTimer() {
-  if (S.running || S.alarmOn) return;
-  clearErrs();
-
-  if (S.mode === 'min') {
-    const v = parseInt(document.getElementById('inp-min').value, 10);
-    if (!v || v < 1) {
-      document.getElementById('err-min').textContent = '1以上の整数を入力してください';
-      return;
-    }
-    S.min = v; persist();
-    startWith(v * 60);
-
+function startT() {
+  if (S.run || S.alm) return;
+  el('ferr').textContent = '';
+  if (S.mode === 'm') {
+    const v = parseInt(el('n-m').value, 10);
+    if (!v || v < 1) { el('ferr').textContent = '1以上の整数を入力してください'; return; }
+    S.min = v; save(); go(v * 60);
   } else {
-    const ts = document.getElementById('inp-end').value;
-    if (!ts) { document.getElementById('err-end').textContent = '終了時刻を入力してください'; return; }
-    const [h, m] = ts.split(':').map(Number);
+    const ts = el('n-e').value;
+    if (!ts) { el('ferr').textContent = '終了時刻を入力してください'; return; }
+    const [h,m] = ts.split(':').map(Number);
     const now = new Date();
-    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-    const diff = Math.floor((endDate - now) / 1000);
-    if (diff <= 0) { document.getElementById('err-end').textContent = '現在時刻より後を指定してください'; return; }
-    S.end = ts; persist();
-    startWith(diff);
+    const diff = Math.floor((new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m,0,0) - now)/1000);
+    if (diff <= 0) { el('ferr').textContent = '現在時刻より後を指定してください'; return; }
+    S.end = ts; save(); go(diff);
   }
 }
 
-function startWith(totalSec) {
-  S.running = true; S.finished = false;
-  S.totalSec = totalSec;
-  S.endTs = Date.now() + totalSec * 1000;
-
-  el('btn-start').disabled  = true;
-  el('btn-cancel').disabled = false;
-  el('btn-fs').disabled     = false;
-
-  clearInterval(S.tickId);
-  S.tickId = setInterval(tick, 250);
-  tick();
+function go(sec) {
+  S.run=true; S.fin=false; S.total=sec; S.endTs=Date.now()+sec*1000;
+  setState('running');
+  clearInterval(S.tid); S.tid = setInterval(tick, 250); tick();
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Timer – tick
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function tick() {
-  if (!S.running) return;
-  const rem = Math.max(0, Math.ceil((S.endTs - Date.now()) / 1000));
-
-  renderTimer(rem);
-  if (S.isFS) syncFS(rem);
-
-  // Flash: last 5 sec
-  el('flash').classList.toggle('on', rem > 0 && rem <= 5);
-
+  if (!S.run) return;
+  const rem = Math.max(0, Math.ceil((S.endTs - Date.now())/1000));
+  drawRing(rem);
+  el('flash').classList.toggle('on', rem>0 && rem<=5);
   if (rem <= 0) timeup();
 }
 
-function renderTimer(rem) {
-  const m = Math.floor(rem / 60), s = rem % 60;
-  el('timer-display').textContent = `${p2(m)}:${p2(s)}`;
-
-  const prog  = S.totalSec > 0 ? rem / S.totalSec : 0;
-  const off   = RING_C * (1 - Math.max(0, Math.min(1, prog)));
-  const ring  = el('ring');
-  ring.style.strokeDasharray  = RING_C;
-  ring.style.strokeDashoffset = off;
-  ring.style.stroke = (rem > 0 && rem <= 5) ? '#c97060' : 'var(--gold)';
-}
-
-function syncFS(rem) {
-  const m = Math.floor(rem / 60), s = rem % 60;
-  el('fs-time').textContent = `${p2(m)}:${p2(s)}`;
-
-  const prog = S.totalSec > 0 ? rem / S.totalSec : 0;
-  const off  = FS_C * (1 - Math.max(0, Math.min(1, prog)));
-  const r    = el('fs-ring-prog');
-  r.style.strokeDasharray  = FS_C;
+function drawRing(rem) {
+  el('tdisp').textContent = `${p2(Math.floor(rem/60))}:${p2(rem%60)}`;
+  const off = CIRC * (1 - Math.max(0, Math.min(1, S.total>0 ? rem/S.total : 0)));
+  const r = el('rp');
+  r.style.strokeDasharray  = CIRC;
   r.style.strokeDashoffset = off;
-  r.style.stroke = (rem > 0 && rem <= 5) ? '#c97060' : 'var(--gold)';
+  r.style.stroke = (rem>0 && rem<=5) ? '#c97060' : 'var(--gold)';
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Timer – finish / cancel
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function timeup() {
-  clearInterval(S.tickId);
-  S.running = false; S.finished = true; S.alarmOn = true;
+  clearInterval(S.tid);
+  S.run=false; S.fin=true; S.alm=true;
   el('flash').classList.remove('on');
-
-  el('timer-display').textContent = '00:00';
-  el('timer-status').textContent  = 'TIME UP';
-  renderTimer(0);
-  if (S.isFS) syncFS(0);
-
-  el('alarm-row').style.display   = '';
-  el('fs-alarm-btn').style.display = '';
-  el('fs-timeup').style.display    = '';
-
-  if (!S.muted) alarmStart();
+  el('tdisp').textContent = '00:00'; el('tsub').textContent = 'TIME UP';
+  drawRing(0); setState('alarm');
+  if (S.isFS) el('fs-alm').style.display = '';
+  if (!S.muted) alarmGo();
 }
 
-function cancelTimer() {
-  clearInterval(S.tickId);
-  S.running = false; S.finished = false; S.alarmOn = false;
-  el('flash').classList.remove('on');
-  alarmStop();
-  resetUI();
+function cancelT() {
+  clearInterval(S.tid); S.run=false; S.fin=false; S.alm=false;
+  el('flash').classList.remove('on'); alarmStop();
+  el('tdisp').textContent='--:--'; el('tsub').textContent='';
+  rstRing(); setState('idle');
 }
 
-function resetUI() {
-  el('timer-display').textContent = '--:--';
-  el('timer-status').textContent  = '待機中';
-  el('btn-start').disabled  = false;
-  el('btn-cancel').disabled = true;
-  el('btn-fs').disabled     = true;
-  el('alarm-row').style.display    = 'none';
-  el('fs-alarm-btn').style.display = 'none';
-  el('fs-timeup').style.display    = 'none';
-
-  const ring = el('ring');
-  ring.style.strokeDasharray  = RING_C;
-  ring.style.strokeDashoffset = RING_C;
-  ring.style.stroke = 'var(--gold)';
-
-  const fsr = el('fs-ring-prog');
-  fsr.style.strokeDasharray  = FS_C;
-  fsr.style.strokeDashoffset = FS_C;
+function rstRing() {
+  const r = el('rp');
+  r.style.strokeDasharray = CIRC; r.style.strokeDashoffset = CIRC; r.style.stroke='var(--gold)';
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Alarm (Web Audio API)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-let actx = null, alarmId = null;
-
+/* ── Alarm ── */
+let actx=null, almId=null;
 function getCtx() {
-  if (!actx || actx.state === 'closed')
-    actx = new (window.AudioContext || window.webkitAudioContext)();
-  if (actx.state === 'suspended') actx.resume();
-  return actx;
+  if (!actx||actx.state==='closed') actx=new(window.AudioContext||window.webkitAudioContext)();
+  if (actx.state==='suspended') actx.resume(); return actx;
 }
-
 function beep() {
   try {
-    const ctx = getCtx(), t = ctx.currentTime;
-    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
-    const g  = ctx.createGain();
-    o1.connect(g); o2.connect(g); g.connect(ctx.destination);
-    o1.type = 'square'; o1.frequency.value = 880;
-    o2.type = 'square'; o2.frequency.value = 660;
-    g.gain.setValueAtTime(0.18, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
-    o1.start(t); o1.stop(t + 0.14);
-    o2.start(t + 0.14); o2.stop(t + 0.42);
+    const c=getCtx(),t=c.currentTime;
+    const o1=c.createOscillator(),o2=c.createOscillator(),g=c.createGain();
+    o1.connect(g);o2.connect(g);g.connect(c.destination);
+    o1.type='square';o1.frequency.value=880;
+    o2.type='square';o2.frequency.value=660;
+    g.gain.setValueAtTime(0.17,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.42);
+    o1.start(t);o1.stop(t+0.14);o2.start(t+0.14);o2.stop(t+0.42);
   } catch(e) {}
 }
+function alarmGo() { beep(); almId=setInterval(beep,1300); }
+function alarmStop() { clearInterval(almId); }
 
-function alarmStart() { beep(); alarmId = setInterval(beep, 1300); }
-
-function alarmStop() {
-  clearInterval(alarmId);
-  S.alarmOn = false;
-  el('alarm-row').style.display    = 'none';
-  el('fs-alarm-btn').style.display = 'none';
-  el('fs-timeup').style.display    = 'none';
-  el('btn-start').disabled  = false;
-  el('btn-cancel').disabled = true;
+function stopAlarm() {
+  alarmStop(); S.alm=false;
+  el('fs-alm').style.display='none';
+  el('tdisp').textContent='--:--'; el('tsub').textContent='';
+  rstRing(); setState('idle');
 }
 
-function stopAlarm() { alarmStop(); }
-
-function toggleMute() {
-  S.muted = !S.muted;
-  el('btn-mute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
-  if (S.muted) clearInterval(alarmId);
-  else if (S.alarmOn) alarmStart();
-  persist();
+function togMute() {
+  S.muted=!S.muted;
+  el('bmute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
+  if (S.muted) clearInterval(almId); else if (S.alm) alarmGo();
+  save();
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Fullscreen
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ── Fullscreen ── */
 function enterFS() {
-  if (!S.running && !S.alarmOn && !S.finished) return;
-  S.isFS = true;
-  el('fullscreen').classList.add('on');
-
-  // Init fullscreen ring
-  const fsr = el('fs-ring-prog');
-  fsr.style.strokeDasharray  = FS_C;
-  fsr.style.strokeDashoffset = FS_C;
-  fsr.style.stroke = 'var(--gold)';
-
-  const rem = S.running ? Math.max(0, Math.ceil((S.endTs - Date.now()) / 1000)) : 0;
-  syncFS(rem);
-
-  if (S.alarmOn) {
-    el('fs-alarm-btn').style.display = '';
-    el('fs-timeup').style.display    = '';
-  }
+  if (!S.run && !S.alm && !S.fin) return;
+  S.isFS=true; el('app').classList.add('fs'); el('fsui').style.display='flex';
+  if (S.alm) el('fs-alm').style.display='';
 }
-
 function exitFS() {
-  S.isFS = false;
-  el('fullscreen').classList.remove('on');
+  S.isFS=false; el('app').classList.remove('fs'); el('fsui').style.display='none';
+  el('fs-alm').style.display='none';
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Stopwatch
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-function swStart() {
-  if (S.swRunning) return;
-  S.swRunning = true;
-  S.swStartTs = Date.now() - S.swElapsed;
-  el('sw-start').disabled = true;
-  el('sw-stop').disabled  = false;
-  S.swTickId = setInterval(swTick, 17);
-  swTick();
+/* ── Stopwatch ── */
+function swSt() {
+  if (S.swRun) return;
+  S.swRun=true; S.swTs=Date.now()-S.swEl;
+  el('sw-s').disabled=true; el('sw-p').disabled=false;
+  S.swTid=setInterval(swDraw,17); swDraw();
+}
+function swPa() {
+  if (!S.swRun) return;
+  S.swRun=false; S.swEl=Date.now()-S.swTs; clearInterval(S.swTid);
+  el('sw-s').disabled=false; el('sw-p').disabled=true;
+}
+function swRe() {
+  clearInterval(S.swTid); S.swRun=false; S.swEl=0; S.swTs=0;
+  el('swdisp').textContent='00:00.00'; el('sw-s').disabled=false; el('sw-p').disabled=true;
+}
+function swDraw() {
+  const e=S.swRun?Date.now()-S.swTs:S.swEl;
+  el('swdisp').textContent=`${p2(Math.floor(e/60000))}:${p2(Math.floor(e/1000)%60)}.${p2(Math.floor(e/10)%100)}`;
 }
 
-function swStop() {
-  if (!S.swRunning) return;
-  S.swRunning = false;
-  S.swElapsed = Date.now() - S.swStartTs;
-  clearInterval(S.swTickId);
-  el('sw-start').disabled = false;
-  el('sw-stop').disabled  = true;
-}
-
-function swReset() {
-  clearInterval(S.swTickId);
-  S.swRunning = false; S.swElapsed = 0; S.swStartTs = 0;
-  el('sw-display').textContent = '00:00.00';
-  el('sw-start').disabled = false;
-  el('sw-stop').disabled  = true;
-}
-
-function swTick() {
-  const e  = S.swRunning ? Date.now() - S.swStartTs : S.swElapsed;
-  const cs = Math.floor(e / 10) % 100;
-  const s  = Math.floor(e / 1000) % 60;
-  const m  = Math.floor(e / 60000);
-  el('sw-display').textContent =
-    `${p2(m)}:${p2(s)}.${p2(cs)}`;
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Util
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ── Util ── */
 function el(id) { return document.getElementById(id); }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Init
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+/* ── Init ── */
 function init() {
-  restore();
+  load();
 
-  // Ring initial state
-  const ring = el('ring');
-  ring.style.strokeDasharray  = RING_C;
-  ring.style.strokeDashoffset = RING_C;
-  ring.style.stroke = 'var(--gold)';
+  // Apply background
+  const bg = BGS.find(b=>b.id===S.bg)||BGS[0];
+  el('bg-a').style.backgroundImage = `url("${bg.s}")`;
 
-  const fsr = el('fs-ring-prog');
-  fsr.style.strokeDasharray  = FS_C;
-  fsr.style.strokeDashoffset = FS_C;
-  fsr.style.stroke = 'var(--gold)';
+  // Ring
+  rstRing();
 
-  // FS ring CSS (not set via class, set directly)
-  el('fs-ring-track').setAttribute('fill', 'none');
-  el('fs-ring-track').setAttribute('stroke', 'rgba(255,255,255,0.06)');
-  el('fs-ring-track').setAttribute('stroke-width', '5');
-  el('fs-ring-prog').setAttribute('fill', 'none');
-  el('fs-ring-prog').setAttribute('stroke-width', '5');
-  el('fs-ring-prog').setAttribute('stroke-linecap', 'round');
+  // Build pickers
+  buildPicker();
 
-  // Restore state
-  switchTab(S.tab);
-  setMode(S.mode);
-  if (S.min) el('inp-min').value = S.min;
-  if (S.end) el('inp-end').value = S.end;
-  el('btn-mute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
+  // UI state
+  sw(S.tab); setM(S.mode); setState('idle');
+  if (S.min) el('n-m').value = S.min;
+  if (S.end) el('n-e').value = S.end;
+  el('bmute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
 
-  // Input change listeners
-  el('inp-min').addEventListener('input', function() { S.min = this.value; persist(); });
-  el('inp-end').addEventListener('change', function() { S.end = this.value; persist(); });
+  // Listeners
+  el('n-m').addEventListener('input',  function(){ S.min=this.value; save(); });
+  el('n-e').addEventListener('change', function(){ S.end=this.value; save(); });
 
   // Clock
   clock(); setInterval(clock, 1000);
