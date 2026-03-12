@@ -3,587 +3,787 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HIGHSTO TIMER</title>
+  <title>Highsto Timer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
   <style>
-    /* ===== CSS Custom Properties ===== */
-    :root {
-      --accent: #a78bfa;
-      --accent-glow: rgba(167,139,250,0.3);
-      --accent-rgb: 167,139,250;
-      --glass: rgba(12,12,24,0.55);
-      --glass-border: rgba(255,255,255,0.1);
-      --glass-hover: rgba(255,255,255,0.06);
-      --text: #f0f0f5;
-      --text-dim: rgba(240,240,245,0.5);
-      --text-faint: rgba(240,240,245,0.25);
-      --danger: #f87171;
-      --r-xl: 20px;
-      --r-lg: 14px;
-      --r-md: 10px;
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Design tokens
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  :root {
+    --bg:         #07091b;
+    --card:       rgba(10, 14, 34, 0.70);
+    --card-b:     rgba(255, 255, 255, 0.065);
+    --gold:       #c8a44a;
+    --gold-dim:   rgba(200, 164, 74, 0.16);
+    --gold-glow:  rgba(200, 164, 74, 0.22);
+    --text:       #dce2f0;
+    --text-dim:   #68789a;
+    --text-faint: #394265;
+    --danger:     #c96858;
+    --ring-track: rgba(255, 255, 255, 0.075);
+    --r-card:     22px;
+    --r-btn:      12px;
+    --r-input:    11px;
+    --shadow:     0 24px 72px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.035) inset;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+
+  body {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN', sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Background
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  #bg {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse at 18% 14%, rgba(20, 32, 85, 0.88) 0%, transparent 52%),
+      radial-gradient(ellipse at 82% 88%, rgba(38, 16, 64, 0.52) 0%, transparent 48%),
+      radial-gradient(ellipse at 55% 48%, rgba(12, 18, 42, 0.4) 0%, transparent 65%),
+      var(--bg);
+  }
+
+  /* キャラ差し込み予定エリア（右下の余白） */
+  #char-area {
+    position: fixed;
+    right: 0; bottom: 0;
+    width: 40vw; max-width: 520px;
+    height: 92vh;
+    z-index: 1;
+    pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: flex-end;
+    /* 画像を入れるときは img タグを追加し opacity: 0.18 程度で配置 */
+  }
+
+  /* 残り5秒フラッシュ */
+  #flash {
+    display: none;
+    position: fixed; inset: 0; z-index: 2;
+    background: rgba(180, 60, 40, 0.22);
+    pointer-events: none;
+    animation: do-flash 0.65s infinite;
+  }
+  #flash.on { display: block; }
+
+  @keyframes do-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Header
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 28px 40px 0;
+    flex-shrink: 0;
+  }
+
+  .h-left {}
+
+  .h-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .h-sub {
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+  }
+
+  .h-right {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  #ct {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  #cd {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Main
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  main {
+    position: relative; z-index: 10;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 40px 40px;
+    min-height: 0;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Tabs
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .tabs {
+    display: inline-flex;
+    background: rgba(0,0,0,0.28);
+    border: 1px solid var(--card-b);
+    border-radius: 40px;
+    padding: 4px;
+    gap: 3px;
+    margin-bottom: 28px;
+    align-self: flex-start;
+  }
+
+  .tab {
+    padding: 8px 24px;
+    background: transparent;
+    border: none;
+    border-radius: 36px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  .tab.active {
+    background: var(--gold);
+    color: #0a0b1a;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     2-column content
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .content {
+    display: flex;
+    gap: 36px;
+    align-items: center;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Left pane (settings card)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .pane-left {
+    flex-shrink: 0;
+    width: 268px;
+    background: var(--card);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid var(--card-b);
+    border-radius: var(--r-card);
+    box-shadow: var(--shadow);
+    padding: 28px 24px 24px;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Right pane (display)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .pane-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Mode toggle
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .mode-toggle {
+    display: flex;
+    background: rgba(0,0,0,0.25);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 2px;
+    margin-bottom: 22px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 7px 0;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: var(--text-faint);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .mode-btn.active {
+    background: rgba(255,255,255,0.09);
+    color: var(--text);
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Input fields
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .field { margin-bottom: 16px; }
+
+  .field-label {
+    display: block;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 7px;
+  }
+
+  .field-row { display: flex; align-items: center; gap: 10px; }
+
+  input[type="number"],
+  input[type="time"] {
+    flex: 1;
+    width: 100%;
+    background: rgba(0,0,0,0.32);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--r-input);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 1.55rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    padding: 10px 14px;
+    text-align: center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="number"]:focus,
+  input[type="time"]:focus {
+    outline: none;
+    border-color: rgba(200,164,74,0.5);
+    box-shadow: 0 0 0 3px var(--gold-dim);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .field-unit {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
+  }
+
+  .field-err {
+    font-size: 0.7rem;
+    color: var(--danger);
+    margin-top: 5px;
+    min-height: 1em;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Presets
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .preset-label {
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+
+  .presets {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+
+  .preset {
+    flex: 1;
+    padding: 8px 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 9px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+  }
+
+  .preset:hover {
+    background: var(--gold-dim);
+    border-color: rgba(200,164,74,0.28);
+    color: var(--gold);
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Divider
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .sep {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.055);
+    margin: 20px 0;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Buttons
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn-row-sub { display: flex; gap: 8px; justify-content: flex-end; }
+
+  .btn {
+    border: none;
+    border-radius: var(--r-btn);
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.15s, opacity 0.15s, background 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .btn:disabled { opacity: 0.28; cursor: not-allowed; }
+
+  /* Primary: gold gradient */
+  .btn-primary {
+    flex: 2;
+    padding: 13px 12px;
+    background: linear-gradient(135deg, #c8a44a 0%, #a8842e 100%);
+    color: #0b0d1e;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .btn-primary:not(:disabled):hover { filter: brightness(1.1); }
+
+  /* Secondary: ghost */
+  .btn-ghost {
+    flex: 1;
+    padding: 13px 8px;
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    font-size: 0.84rem;
+  }
+  .btn-ghost:not(:disabled):hover {
+    background: rgba(255,255,255,0.09);
+    color: var(--text);
+  }
+
+  /* Utility icon buttons */
+  .btn-util {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: var(--text-faint);
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+  .btn-util:not(:disabled):hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-dim);
+  }
+
+  /* Danger */
+  .btn-danger {
+    width: 100%;
+    padding: 13px;
+    margin-top: 10px;
+    background: rgba(201,104,88,0.75);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: var(--r-btn);
+  }
+  .btn-danger:hover { background: rgba(201,104,88,0.92); }
+
+  #alarm-row { display: none; }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Ring (normal view)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  .ring-wrap {
+    position: relative;
+    width: 260px; height: 260px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .ring-svg {
+    position: absolute; inset: 0;
+    transform: rotate(-90deg);
+  }
+
+  .ring-track {
+    fill: none;
+    stroke: var(--ring-track);
+    stroke-width: 8;
+  }
+
+  .ring-prog {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.7s ease, stroke 0.4s;
+    filter: drop-shadow(0 0 8px var(--gold-glow));
+  }
+
+  .ring-inner {
+    position: relative; z-index: 1;
+    text-align: center;
+    user-select: none;
+  }
+
+  #timer-display {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 3.1rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    color: var(--text);
+    text-shadow: 0 0 40px var(--gold-glow);
+  }
+
+  #timer-status {
+    margin-top: 8px;
+    font-size: 0.65rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Stopwatch display (right pane)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  #sw-display {
+    font-family: 'Inter', sans-serif;
+    font-size: 4.2rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    user-select: none;
+  }
+
+  /* Stopwatch controls in left pane */
+  .sw-pane-inner {
+    padding-top: 8px;
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Fullscreen overlay
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  #fullscreen {
+    display: none;
+    position: fixed; inset: 0; z-index: 500;
+    background:
+      radial-gradient(ellipse at 18% 14%, rgba(20, 32, 85, 0.88) 0%, transparent 52%),
+      radial-gradient(ellipse at 82% 88%, rgba(38, 16, 64, 0.52) 0%, transparent 48%),
+      #07091b;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  #fullscreen.on { display: flex; }
+
+  #fs-back {
+    position: absolute; top: 24px; right: 28px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 10px;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  #fs-back:hover { background: rgba(255,255,255,0.11); color: var(--text); }
+
+  .fs-ring-wrap {
+    position: relative;
+    width: min(62vmin, 460px);
+    height: min(62vmin, 460px);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  #fs-ring-svg {
+    position: absolute; inset: 0;
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 0 18px var(--gold-glow)) drop-shadow(0 0 40px rgba(200,164,74,0.12));
+  }
+
+  #fs-ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 5; }
+  #fs-ring-prog {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.7s ease, stroke 0.4s;
+  }
+
+  .fs-inner {
+    position: relative; z-index: 1;
+    text-align: center;
+    user-select: none;
+  }
+
+  #fs-time {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(4.8rem, 16vmin, 12rem);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    color: var(--text);
+    text-shadow: 0 0 80px var(--gold-glow), 0 0 140px rgba(200,164,74,0.1);
+  }
+
+  #fs-timeup {
+    display: none;
+    margin-top: 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.9;
+  }
+
+  #fs-alarm-btn {
+    display: none;
+    position: absolute;
+    bottom: 60px;
+    background: rgba(201,104,88,0.82);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 16px 52px;
+    cursor: pointer;
+    animation: alarm-pulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes alarm-pulse {
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(201,104,88,0.4); }
+    50% { transform: scale(1.025); box-shadow: 0 0 0 10px rgba(201,104,88,0); }
+  }
+
+  /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     Responsive – mobile (< 700px)
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+  @media (max-width: 700px) {
+    header { padding: 20px 20px 0; }
+    main { padding: 20px 20px 32px; }
+
+    .h-title { font-size: 0.7rem; }
+    #ct { font-size: 1.05rem; }
+
+    .tabs { margin-bottom: 20px; }
+    .tab { padding: 7px 18px; font-size: 0.78rem; }
+
+    .content {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 24px;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { height: 100%; }
+    /* On mobile: right pane (display) comes first visually */
+    .pane-right { order: -1; }
+    .pane-left { width: 100%; }
 
-    body {
-      min-height: 100dvh;
-      overflow: hidden;
-      font-family: 'Inter', 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN', sans-serif;
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
+    .ring-wrap { width: 220px; height: 220px; margin: 0 auto 16px; }
+    #timer-display { font-size: 2.6rem; }
+    #sw-display { font-size: 3.2rem; }
+  }
 
-    /* ===== Background layers (crossfade) ===== */
-    #bg-a, #bg-b {
-      position: fixed; inset: 0; z-index: 0;
-      background-size: cover;
-      background-position: center;
-      transition: opacity 1.2s ease;
-    }
-    #bg-a { opacity: 1; }
-    #bg-b { opacity: 0; }
-
-    /* Dark overlay */
-    #overlay {
-      position: fixed; inset: 0; z-index: 1;
-      background: var(--overlay-color, rgba(4,4,14,0.52));
-      transition: background 0.8s ease;
-    }
-
-    /* Subtle noise grain */
-    #overlay::after {
-      content: '';
-      position: absolute; inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-      pointer-events: none;
-    }
-
-    /* ===== Header ===== */
-    #header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px;
-      pointer-events: none;
-    }
-
-    #site-title {
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.22em;
-      color: var(--accent);
-      text-shadow: 0 0 24px var(--accent-glow);
-      text-transform: uppercase;
-      pointer-events: auto;
-    }
-
-    #header-right {
-      display: flex; align-items: center; gap: 14px;
-      pointer-events: auto;
-    }
-
-    #current-datetime {
-      text-align: right;
-      font-size: 0.78rem;
-      color: var(--text-dim);
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.03em;
-      line-height: 1.5;
-    }
-
-    /* ===== Main app area ===== */
-    #app {
-      position: fixed; inset: 0; z-index: 10;
-      display: flex; align-items: center; justify-content: center;
-      padding: 72px 16px 88px;
-    }
-
-    /* ===== Glass card ===== */
-    .card {
-      width: 100%; max-width: 428px;
-      background: var(--glass);
-      backdrop-filter: blur(28px) saturate(1.5);
-      -webkit-backdrop-filter: blur(28px) saturate(1.5);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--r-xl);
-      padding: 22px 22px 18px;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07);
-    }
-
-    /* ===== Tabs ===== */
-    .tabs {
-      display: flex;
-      background: rgba(0,0,0,0.3);
-      border-radius: var(--r-md);
-      padding: 3px; gap: 3px;
-      margin-bottom: 18px;
-    }
-
-    .tab {
-      flex: 1; padding: 8px 0;
-      background: transparent; border: none; border-radius: 8px;
-      color: var(--text-dim);
-      font-family: inherit; font-size: 0.82rem; font-weight: 600;
-      letter-spacing: 0.05em; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab.active {
-      background: var(--accent);
-      color: #0a0a14;
-    }
-
-    /* ===== Mode toggle ===== */
-    .mode-toggle {
-      display: flex;
-      background: rgba(0,0,0,0.22);
-      border-radius: 9px; padding: 3px; gap: 3px;
-      margin-bottom: 14px;
-    }
-
-    .mode-btn {
-      flex: 1; padding: 6px 0;
-      background: transparent; border: none; border-radius: 7px;
-      color: var(--text-dim);
-      font-family: inherit; font-size: 0.76rem; font-weight: 600;
-      letter-spacing: 0.04em; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .mode-btn.active {
-      background: rgba(255,255,255,0.12);
-      color: var(--text);
-    }
-
-    /* ===== Inputs ===== */
-    .field { margin-bottom: 12px; }
-
-    .field-label {
-      font-size: 0.68rem;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text-faint);
-      margin-bottom: 5px;
-    }
-
-    .field-row { display: flex; align-items: center; gap: 10px; }
-
-    input[type="number"], input[type="time"] {
-      flex: 1; width: 100%;
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--r-md);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 1.45rem; font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      padding: 9px 14px; text-align: center;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      -webkit-appearance: none; appearance: none;
-    }
-    input[type="number"]:focus, input[type="time"]:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-    input[type="number"]::-webkit-inner-spin-button,
-    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"] { -moz-appearance: textfield; }
-
-    .field-unit { font-size: 0.82rem; color: var(--text-dim); flex-shrink: 0; }
-
-    .field-error { font-size: 0.72rem; color: var(--danger); margin-top: 4px; min-height: 1em; }
-
-    /* ===== Presets ===== */
-    .presets {
-      display: flex; gap: 5px;
-      margin-bottom: 14px;
-    }
-
-    .preset {
-      flex: 1;
-      padding: 7px 2px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-      color: var(--text-dim);
-      font-family: inherit; font-size: 0.76rem; font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      letter-spacing: 0.02em;
-    }
-    .preset:hover {
-      background: var(--accent);
-      color: #0a0a14;
-      border-color: transparent;
-    }
-
-    /* ===== Divider ===== */
-    .sep { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 14px 0; }
-
-    /* ===== Progress ring ===== */
-    .ring-wrap {
-      position: relative;
-      width: 200px; height: 200px;
-      margin: 0 auto 18px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .ring-svg {
-      position: absolute; inset: 0;
-      transform: rotate(-90deg);
-    }
-
-    .ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 2.5; }
-
-    .ring-progress {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      filter: drop-shadow(0 0 6px var(--accent-glow));
-      transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
-    }
-
-    .ring-inner { position: relative; z-index: 1; text-align: center; }
-
-    #timer-display {
-      display: block;
-      font-family: 'Inter', sans-serif;
-      font-size: 2.7rem; font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.02em; line-height: 1;
-      text-shadow: 0 0 40px var(--accent-glow);
-    }
-
-    #timer-status {
-      font-size: 0.65rem; letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      margin-top: 5px;
-    }
-
-    /* ===== Buttons ===== */
-    .btns { display: flex; gap: 7px; }
-
-    .btn {
-      flex: 1; padding: 12px 8px;
-      border: none; border-radius: var(--r-md);
-      font-family: inherit; font-size: 0.85rem; font-weight: 700;
-      letter-spacing: 0.04em; cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-    .btn-accent {
-      background: var(--accent);
-      color: #0a0a14;
-      flex: 2;
-    }
-    .btn-accent:not(:disabled):hover { filter: brightness(1.12); }
-
-    .btn-ghost {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: var(--text-dim);
-    }
-    .btn-ghost:not(:disabled):hover {
-      background: rgba(255,255,255,0.12);
-      color: var(--text);
-    }
-
-    .btn-icon { max-width: 44px; min-width: 44px; font-size: 0.95rem; }
-
-    .btn-danger {
-      background: rgba(248,113,113,0.8);
-      color: #fff;
-      width: 100%;
-      margin-top: 7px;
-    }
-    .btn-danger:hover { background: rgba(248,113,113,1); }
-
-    #alarm-stop-row { display: none; }
-
-    /* ===== Stopwatch ===== */
-    .sw-display-wrap {
-      display: flex; align-items: center; justify-content: center;
-      padding: 28px 0 32px;
-    }
-
-    #sw-display {
-      font-family: 'Inter', sans-serif;
-      font-size: 3.3rem; font-weight: 800;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.05em;
-      text-shadow: 0 0 30px rgba(255,255,255,0.08);
-    }
-
-    /* ===== Theme picker ===== */
-    #theme-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-      padding: 10px 16px 14px;
-      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-    }
-
-    .theme-list {
-      display: flex; justify-content: center; gap: 8px;
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; padding: 2px 4px;
-    }
-    .theme-list::-webkit-scrollbar { display: none; }
-
-    .theme-item {
-      flex-shrink: 0;
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      cursor: pointer;
-    }
-
-    .theme-swatch {
-      width: 48px; height: 36px;
-      border-radius: 8px;
-      background-size: cover; background-position: center;
-      border: 2px solid transparent;
-      transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
-    }
-    .theme-item:hover .theme-swatch { transform: scale(1.08); }
-    .theme-item.active .theme-swatch {
-      border-color: #fff;
-      box-shadow: 0 0 12px rgba(255,255,255,0.35);
-    }
-
-    .theme-name {
-      font-size: 0.6rem; letter-spacing: 0.06em;
-      color: var(--text-dim);
-      transition: color 0.2s;
-    }
-    .theme-item.active .theme-name { color: var(--text); }
-
-    /* ===== Fullscreen overlay ===== */
-    #fs {
-      display: none;
-      position: fixed; inset: 0; z-index: 500;
-      flex-direction: column; align-items: center; justify-content: center;
-    }
-    #fs.on { display: flex; }
-
-    #fs-back {
-      position: absolute; top: 20px; left: 20px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px; color: var(--text-dim);
-      font-family: inherit; font-size: 0.8rem;
-      padding: 8px 16px; cursor: pointer;
-      transition: all 0.2s;
-    }
-    #fs-back:hover { background: rgba(255,255,255,0.14); color: var(--text); }
-
-    #fs-ring-wrap {
-      position: relative;
-      width: min(60vmin, 440px); height: min(60vmin, 440px);
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    #fs-ring-svg {
-      position: absolute; inset: 0;
-      transform: rotate(-90deg);
-      filter: drop-shadow(0 0 20px var(--accent-glow)) drop-shadow(0 0 40px var(--accent-glow));
-    }
-    #fs-ring-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 2; }
-    #fs-ring-progress {
-      fill: none; stroke: var(--accent); stroke-width: 2;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.5s linear, stroke 0.3s;
-    }
-
-    .fs-inner { position: relative; z-index: 1; text-align: center; }
-
-    #fs-time {
-      display: block;
-      font-family: 'Inter', sans-serif;
-      font-size: clamp(4.5rem, 17vmin, 12rem);
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 0.03em; line-height: 1;
-      text-shadow:
-        0 0 60px var(--accent-glow),
-        0 0 100px var(--accent-glow);
-    }
-
-    #fs-timeup {
-      display: none;
-      margin-top: 12px;
-      font-size: 0.9rem; font-weight: 700;
-      letter-spacing: 0.25em; text-transform: uppercase;
-      color: var(--accent);
-      text-shadow: 0 0 20px var(--accent-glow);
-    }
-
-    #fs-alarm-btn {
-      display: none;
-      position: absolute; bottom: 64px;
-      background: rgba(248,113,113,0.85);
-      border: none; border-radius: 12px;
-      color: #fff;
-      font-family: inherit; font-size: 1rem; font-weight: 700;
-      padding: 14px 44px; cursor: pointer;
-      letter-spacing: 0.06em;
-      animation: alarm-pulse 1s infinite;
-    }
-
-    @keyframes alarm-pulse {
-      0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248,113,113,0.4); }
-      50% { transform: scale(1.03); box-shadow: 0 0 0 8px rgba(248,113,113,0); }
-    }
-
-    /* ===== Flash animation ===== */
-    @keyframes flash {
-      0%,100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    #flash-layer {
-      display: none;
-      position: fixed; inset: 0; z-index: 2;
-      background: rgba(180,30,20,0.35);
-      animation: flash 0.55s infinite;
-      pointer-events: none;
-    }
-    #flash-layer.on { display: block; }
-
-    /* ===== Responsive ===== */
-    @media (max-width: 440px) {
-      .card { padding: 18px 15px 15px; }
-      #timer-display { font-size: 2.3rem; }
-      .ring-wrap { width: 180px; height: 180px; }
-      #sw-display { font-size: 2.7rem; }
-      .btn { font-size: 0.8rem; padding: 11px 6px; }
-      .btn-icon { max-width: 40px; min-width: 40px; }
-    }
-
-    @media (max-height: 650px) {
-      #app { padding: 62px 16px 82px; }
-      .ring-wrap { width: 165px; height: 165px; margin-bottom: 12px; }
-      #timer-display { font-size: 2.2rem; }
-      .sep { margin: 10px 0; }
-      .presets { margin-bottom: 10px; }
-    }
+  /* Compact height */
+  @media (max-height: 680px) {
+    header { padding-top: 14px; }
+    main { padding-top: 16px; padding-bottom: 20px; }
+    .tabs { margin-bottom: 16px; }
+    .ring-wrap { width: 210px; height: 210px; }
+    #timer-display { font-size: 2.6rem; }
+    .sep { margin: 14px 0; }
+  }
   </style>
 </head>
 <body>
 
-<!-- Background -->
-<div id="bg-a"></div>
-<div id="bg-b"></div>
-<div id="overlay"></div>
-<div id="flash-layer"></div>
+<div id="bg"></div>
+<div id="char-area"></div>
+<div id="flash"></div>
 
-<!-- Header -->
-<header id="header">
-  <div id="site-title">Highsto Timer</div>
-  <div id="header-right">
-    <div id="current-datetime">
-      <span id="ct"></span><br>
-      <span id="cd" style="font-size:0.68rem;opacity:0.7;"></span>
-    </div>
+<!-- ━━━━ Header ━━━━ -->
+<header>
+  <div class="h-left">
+    <div class="h-title">Highsto Timer</div>
+    <div class="h-sub">集中と対戦の時間管理</div>
+  </div>
+  <div class="h-right">
+    <span id="ct">00:00:00</span>
+    <span id="cd"></span>
   </div>
 </header>
 
-<!-- App -->
-<div id="app">
-  <div class="card">
+<!-- ━━━━ Main ━━━━ -->
+<main>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" id="tab-timer" onclick="switchTab('timer')">タイマー</button>
+    <button class="tab" id="tab-sw" onclick="switchTab('sw')">ストップウォッチ</button>
+  </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" id="t-timer" onclick="switchTab('timer')">タイマー</button>
-      <button class="tab" id="t-sw" onclick="switchTab('sw')">ストップウォッチ</button>
-    </div>
+  <!-- 2-column layout -->
+  <div class="content">
 
-    <!-- ======= Timer panel ======= -->
-    <div id="p-timer">
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="m-min" onclick="setMode('min')">分数指定</button>
-        <button class="mode-btn" id="m-end" onclick="setMode('end')">終了時刻指定</button>
-      </div>
+    <!-- Left: settings card -->
+    <div class="pane-left">
 
-      <div class="field" id="f-min">
-        <div class="field-label">時間（分）</div>
-        <div class="field-row">
-          <input type="number" id="inp-min" min="1" max="999" placeholder="10">
-          <span class="field-unit">分</span>
+      <!-- ── Timer pane ── -->
+      <div id="p-timer">
+        <!-- Mode toggle -->
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="m-min" onclick="setMode('min')">分数指定</button>
+          <button class="mode-btn" id="m-end" onclick="setMode('end')">終了時刻指定</button>
         </div>
-        <div class="field-error" id="err-min"></div>
-      </div>
 
-      <div class="field" id="f-end" style="display:none">
-        <div class="field-label">終了時刻</div>
-        <div class="field-row">
-          <input type="time" id="inp-end">
+        <!-- Minutes input -->
+        <div class="field" id="f-min">
+          <label class="field-label" for="inp-min">設定時間</label>
+          <div class="field-row">
+            <input type="number" id="inp-min" min="1" max="999" placeholder="10">
+            <span class="field-unit">分</span>
+          </div>
+          <div class="field-err" id="err-min"></div>
         </div>
-        <div class="field-error" id="err-end"></div>
-      </div>
 
-      <div class="presets">
-        <button class="preset" onclick="startPreset(5)">5分</button>
-        <button class="preset" onclick="startPreset(10)">10分</button>
-        <button class="preset" onclick="startPreset(20)">20分</button>
-        <button class="preset" onclick="startPreset(30)">30分</button>
-        <button class="preset" onclick="startPreset(60)">60分</button>
-      </div>
+        <!-- End-time input -->
+        <div class="field" id="f-end" style="display:none">
+          <label class="field-label" for="inp-end">終了時刻</label>
+          <div class="field-row">
+            <input type="time" id="inp-end">
+          </div>
+          <div class="field-err" id="err-end"></div>
+        </div>
 
-      <hr class="sep">
+        <!-- Presets -->
+        <div class="preset-label">クイックスタート</div>
+        <div class="presets">
+          <button class="preset" onclick="doPreset(5)">5分</button>
+          <button class="preset" onclick="doPreset(10)">10分</button>
+          <button class="preset" onclick="doPreset(20)">20分</button>
+          <button class="preset" onclick="doPreset(30)">30分</button>
+          <button class="preset" onclick="doPreset(60)">60分</button>
+        </div>
 
-      <!-- Ring -->
-      <div class="ring-wrap">
-        <svg class="ring-svg" viewBox="0 0 200 200">
-          <circle class="ring-track" cx="100" cy="100" r="90"/>
-          <circle class="ring-progress" id="ring" cx="100" cy="100" r="90"/>
-        </svg>
-        <div class="ring-inner">
-          <span id="timer-display">--:--</span>
-          <div id="timer-status">待機中</div>
+        <hr class="sep">
+
+        <!-- Main controls -->
+        <div class="btn-row">
+          <button class="btn btn-primary" id="btn-start" onclick="startTimer()">開始</button>
+          <button class="btn btn-ghost" id="btn-cancel" onclick="cancelTimer()" disabled>キャンセル</button>
+        </div>
+
+        <!-- Utility controls -->
+        <div class="btn-row-sub">
+          <button class="btn btn-util" id="btn-mute" onclick="toggleMute()" title="ミュート切替">🔊 ミュート</button>
+          <button class="btn btn-util" id="btn-fs" onclick="enterFS()" disabled title="全画面表示">⛶ 全画面</button>
+        </div>
+
+        <!-- Alarm stop -->
+        <div id="alarm-row">
+          <button class="btn btn-danger" onclick="stopAlarm()">🔔 アラーム停止</button>
+        </div>
+      </div><!-- /#p-timer -->
+
+      <!-- ── SW pane ── -->
+      <div id="p-sw" style="display:none">
+        <div class="sw-pane-inner">
+          <hr class="sep" style="margin-top:0">
+          <div class="btn-row">
+            <button class="btn btn-primary" id="sw-start" onclick="swStart()">開始</button>
+            <button class="btn btn-ghost" id="sw-stop" onclick="swStop()" disabled>停止</button>
+          </div>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn btn-ghost" style="flex:1" id="sw-reset" onclick="swReset()">リセット</button>
+          </div>
         </div>
       </div>
 
-      <!-- Controls -->
-      <div class="btns">
-        <button class="btn btn-accent" id="btn-start" onclick="startTimer()">開始</button>
-        <button class="btn btn-ghost" id="btn-cancel" onclick="cancelTimer()" disabled>キャンセル</button>
-        <button class="btn btn-ghost btn-icon" id="btn-fs" onclick="enterFS()" disabled title="全画面">⛶</button>
-        <button class="btn btn-ghost btn-icon" id="btn-mute" onclick="toggleMute()" title="ミュート">🔊</button>
+    </div><!-- /.pane-left -->
+
+    <!-- Right: display area -->
+    <div class="pane-right">
+
+      <!-- Timer display -->
+      <div id="disp-timer">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 260 260">
+            <circle class="ring-track" cx="130" cy="130" r="116"/>
+            <circle class="ring-prog" id="ring" cx="130" cy="130" r="116"/>
+          </svg>
+          <div class="ring-inner">
+            <span id="timer-display">--:--</span>
+            <div id="timer-status">待機中</div>
+          </div>
+        </div>
       </div>
 
-      <div id="alarm-stop-row">
-        <button class="btn btn-danger" onclick="stopAlarm()">🔔 アラーム停止</button>
-      </div>
-    </div>
-
-    <!-- ======= Stopwatch panel ======= -->
-    <div id="p-sw" style="display:none">
-      <div class="sw-display-wrap">
+      <!-- Stopwatch display -->
+      <div id="disp-sw" style="display:none">
         <span id="sw-display">00:00.00</span>
       </div>
-      <div class="btns">
-        <button class="btn btn-accent" id="sw-start" onclick="swStart()">開始</button>
-        <button class="btn btn-ghost" id="sw-stop" onclick="swStop()" disabled>停止</button>
-        <button class="btn btn-ghost" id="sw-reset" onclick="swReset()">リセット</button>
-      </div>
-    </div>
 
-  </div>
-</div>
+    </div><!-- /.pane-right -->
+  </div><!-- /.content -->
+</main>
 
-<!-- Theme picker -->
-<div id="theme-bar">
-  <div class="theme-list" id="theme-list"></div>
-</div>
+<!-- ━━━━ Fullscreen ━━━━ -->
+<div id="fullscreen">
+  <button id="fs-back" onclick="exitFS()">戻る</button>
 
-<!-- Fullscreen -->
-<div id="fs">
-  <button id="fs-back" onclick="exitFS()">← 戻る</button>
-
-  <div id="fs-ring-wrap">
+  <div class="fs-ring-wrap">
     <svg id="fs-ring-svg" viewBox="0 0 300 300">
-      <circle id="fs-ring-track" cx="150" cy="150" r="130"/>
-      <circle id="fs-ring-progress" cx="150" cy="150" r="130"/>
+      <circle id="fs-ring-track" cx="150" cy="150" r="135"/>
+      <circle id="fs-ring-prog" cx="150" cy="150" r="135"/>
     </svg>
     <div class="fs-inner">
       <span id="fs-time">--:--</span>
@@ -597,425 +797,329 @@
 <script>
 'use strict';
 
-/* ============================================================
-   THEMES
-   image: null → gradient を背景に使用
-   image: 'url(...)' → 実画像を使用（差し替え時はここを変更）
-============================================================ */
-const THEMES = [
-  {
-    id: 'midnight', name: '深夜',
-    gradient: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
-    image: null,
-    accent: '#a78bfa', accentGlow: 'rgba(167,139,250,0.32)',
-    overlay: 'rgba(4,4,18,0.52)',
-  },
-  {
-    id: 'forest', name: '深森',
-    gradient: 'linear-gradient(155deg, #0c1f10 0%, #183a20 45%, #0a1a0d 100%)',
-    image: null,
-    accent: '#4ade80', accentGlow: 'rgba(74,222,128,0.32)',
-    overlay: 'rgba(0,6,2,0.45)',
-  },
-  {
-    id: 'ocean', name: '深海',
-    gradient: 'linear-gradient(155deg, #020c1a 0%, #092340 55%, #040e28 100%)',
-    image: null,
-    accent: '#38bdf8', accentGlow: 'rgba(56,189,248,0.32)',
-    overlay: 'rgba(0,4,14,0.50)',
-  },
-  {
-    id: 'ember', name: '残火',
-    gradient: 'linear-gradient(155deg, #180400 0%, #3d1000 35%, #782c00 65%, #b04400 100%)',
-    image: null,
-    accent: '#fb923c', accentGlow: 'rgba(251,146,60,0.32)',
-    overlay: 'rgba(12,2,0,0.52)',
-  },
-  {
-    id: 'aurora', name: 'オーロラ',
-    gradient: 'linear-gradient(155deg, #010c0e 0%, #012818 35%, #091a2c 65%, #01090b 100%)',
-    image: null,
-    accent: '#2dd4bf', accentGlow: 'rgba(45,212,191,0.32)',
-    overlay: 'rgba(0,6,5,0.48)',
-  },
-  {
-    id: 'cosmos', name: '宇宙',
-    gradient: 'radial-gradient(ellipse at 22% 32%, #1a0533 0%, #080218 55%, #000408 100%)',
-    image: null,
-    accent: '#c084fc', accentGlow: 'rgba(192,132,252,0.32)',
-    overlay: 'rgba(0,0,8,0.52)',
-  },
-];
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Ring constants
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const RING_R = 116, RING_C = +(2 * Math.PI * RING_R).toFixed(2);  // ≈ 729.0
+const FS_R   = 135, FS_C   = +(2 * Math.PI * FS_R).toFixed(2);    // ≈ 848.2
 
-/* ============================================================
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    State
-============================================================ */
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 let S = {
   tab: 'timer',
-  timerMode: 'min',
-  timerMinutes: '',
-  timerEndTime: '',
+  mode: 'min',
+  min: '',
+  end: '',
   muted: false,
-  themeId: 'midnight',
 
   running: false,
-  endTs: null,
+  endTs: 0,
   totalSec: 0,
   finished: false,
   alarmOn: false,
   tickId: null,
 
+  isFS: false,
+
   swRunning: false,
-  swStart: null,
+  swStartTs: 0,
   swElapsed: 0,
   swTickId: null,
-
-  isFS: false,
 };
 
-/* ============================================================
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Persist
-============================================================ */
-function save() {
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function persist() {
   try {
-    localStorage.setItem('hst2', JSON.stringify({
-      tab: S.tab, timerMode: S.timerMode,
-      timerMinutes: S.timerMinutes, timerEndTime: S.timerEndTime,
-      muted: S.muted, themeId: S.themeId,
+    localStorage.setItem('hst3', JSON.stringify({
+      tab: S.tab, mode: S.mode,
+      min: S.min, end: S.end, muted: S.muted,
     }));
   } catch(e) {}
 }
 
-function load() {
+function restore() {
   try {
-    const d = JSON.parse(localStorage.getItem('hst2') || '{}');
-    if (d.tab) S.tab = d.tab;
-    if (d.timerMode) S.timerMode = d.timerMode;
-    if (d.timerMinutes) S.timerMinutes = d.timerMinutes;
-    if (d.timerEndTime) S.timerEndTime = d.timerEndTime;
+    const d = JSON.parse(localStorage.getItem('hst3') || '{}');
+    if (d.tab)  S.tab  = d.tab;
+    if (d.mode) S.mode = d.mode;
+    if (d.min)  S.min  = d.min;
+    if (d.end)  S.end  = d.end;
     if (typeof d.muted === 'boolean') S.muted = d.muted;
-    if (d.themeId) S.themeId = d.themeId;
   } catch(e) {}
 }
 
-/* ============================================================
-   Theme
-============================================================ */
-const R = document.documentElement;
-let bgActive = 'a';
-
-function applyTheme(theme, animate) {
-  R.style.setProperty('--accent', theme.accent);
-  R.style.setProperty('--accent-glow', theme.accentGlow);
-  document.getElementById('overlay').style.background = theme.overlay;
-
-  const bg = theme.image || theme.gradient;
-
-  if (!animate) {
-    document.getElementById('bg-a').style.backgroundImage = bg;
-    document.getElementById('bg-b').style.backgroundImage = '';
-    bgActive = 'a';
-  } else {
-    const next = bgActive === 'a' ? 'b' : 'a';
-    const curr = bgActive;
-    const elNext = document.getElementById(`bg-${next}`);
-    const elCurr = document.getElementById(`bg-${curr}`);
-    elNext.style.transition = 'none';
-    elNext.style.opacity = '0';
-    elNext.style.backgroundImage = bg;
-    elNext.getBoundingClientRect(); // reflow
-    elNext.style.transition = 'opacity 1.1s ease';
-    elNext.style.opacity = '1';
-    elCurr.style.transition = 'opacity 1.1s ease';
-    elCurr.style.opacity = '0';
-    bgActive = next;
-  }
-
-  // Ring colors
-  document.getElementById('ring').style.stroke = theme.accent;
-  document.getElementById('fs-ring-progress').style.stroke = theme.accent;
-
-  // Picker selection
-  document.querySelectorAll('.theme-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.id === theme.id);
-  });
-
-  S.themeId = theme.id;
-  save();
-}
-
-function buildPicker() {
-  const list = document.getElementById('theme-list');
-  THEMES.forEach(t => {
-    const item = document.createElement('div');
-    item.className = 'theme-item' + (t.id === S.themeId ? ' active' : '');
-    item.dataset.id = t.id;
-    item.onclick = () => applyTheme(t, true);
-
-    const sw = document.createElement('div');
-    sw.className = 'theme-swatch';
-    sw.style.backgroundImage = t.image || t.gradient;
-
-    const nm = document.createElement('div');
-    nm.className = 'theme-name';
-    nm.textContent = t.name;
-
-    item.append(sw, nm);
-    list.appendChild(item);
-  });
-}
-
-/* ============================================================
-   Clock
-============================================================ */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Clock (JST)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const DAYS = ['日','月','火','水','木','金','土'];
+const p2 = n => String(n).padStart(2, '0');
 
 function clock() {
   const jst = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-  const pad = n => String(n).padStart(2, '0');
   document.getElementById('ct').textContent =
-    `${pad(jst.getHours())}:${pad(jst.getMinutes())}:${pad(jst.getSeconds())}`;
+    `${p2(jst.getHours())}:${p2(jst.getMinutes())}:${p2(jst.getSeconds())}`;
   document.getElementById('cd').textContent =
-    `${jst.getFullYear()}/${pad(jst.getMonth()+1)}/${pad(jst.getDate())}(${DAYS[jst.getDay()]})`;
+    `${jst.getFullYear()}/${p2(jst.getMonth()+1)}/${p2(jst.getDate())}(${DAYS[jst.getDay()]})`;
 }
 
-/* ============================================================
-   Tab / Mode
-============================================================ */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Tab / Mode switching
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function switchTab(tab) {
   S.tab = tab;
-  document.getElementById('t-timer').classList.toggle('active', tab === 'timer');
-  document.getElementById('t-sw').classList.toggle('active', tab === 'sw');
-  document.getElementById('p-timer').style.display = tab === 'timer' ? '' : 'none';
-  document.getElementById('p-sw').style.display = tab === 'sw' ? '' : 'none';
-  save();
+  const isTimer = tab === 'timer';
+  document.getElementById('tab-timer').classList.toggle('active', isTimer);
+  document.getElementById('tab-sw').classList.toggle('active', !isTimer);
+  document.getElementById('p-timer').style.display   = isTimer ? '' : 'none';
+  document.getElementById('p-sw').style.display      = isTimer ? 'none' : '';
+  document.getElementById('disp-timer').style.display = isTimer ? '' : 'none';
+  document.getElementById('disp-sw').style.display    = isTimer ? 'none' : '';
+  persist();
 }
 
 function setMode(mode) {
-  S.timerMode = mode;
+  S.mode = mode;
   document.getElementById('m-min').classList.toggle('active', mode === 'min');
   document.getElementById('m-end').classList.toggle('active', mode === 'end');
   document.getElementById('f-min').style.display = mode === 'min' ? '' : 'none';
   document.getElementById('f-end').style.display = mode === 'end' ? '' : 'none';
-  clearErrors();
-  save();
+  clearErrs();
+  persist();
 }
 
-function clearErrors() {
+function clearErrs() {
   document.getElementById('err-min').textContent = '';
   document.getElementById('err-end').textContent = '';
 }
 
-/* ============================================================
-   Timer
-============================================================ */
-const RING_R = 90, RING_C = 2 * Math.PI * RING_R;       // ≈565.5
-const FS_R = 130,  FS_C  = 2 * Math.PI * FS_R;           // ≈817.0
-
-function startPreset(min) {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Timer – start / validate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function doPreset(min) {
   if (S.running || S.alarmOn) return;
   setMode('min');
   document.getElementById('inp-min').value = min;
-  S.timerMinutes = min;
-  go(min * 60);
+  S.min = min;
+  startWith(min * 60);
 }
 
 function startTimer() {
   if (S.running || S.alarmOn) return;
-  clearErrors();
+  clearErrs();
 
-  if (S.timerMode === 'min') {
-    const raw = document.getElementById('inp-min').value;
-    const v = parseInt(raw, 10);
-    if (!raw || isNaN(v) || v < 1) {
+  if (S.mode === 'min') {
+    const v = parseInt(document.getElementById('inp-min').value, 10);
+    if (!v || v < 1) {
       document.getElementById('err-min').textContent = '1以上の整数を入力してください';
       return;
     }
-    S.timerMinutes = v; save();
-    go(v * 60);
+    S.min = v; persist();
+    startWith(v * 60);
 
   } else {
     const ts = document.getElementById('inp-end').value;
     if (!ts) { document.getElementById('err-end').textContent = '終了時刻を入力してください'; return; }
     const [h, m] = ts.split(':').map(Number);
     const now = new Date();
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
-    const diff = Math.floor((end - now) / 1000);
-    if (diff <= 0) { document.getElementById('err-end').textContent = '現在時刻より後の時刻を入力してください'; return; }
-    S.timerEndTime = ts; save();
-    go(diff);
+    const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    const diff = Math.floor((endDate - now) / 1000);
+    if (diff <= 0) { document.getElementById('err-end').textContent = '現在時刻より後を指定してください'; return; }
+    S.end = ts; persist();
+    startWith(diff);
   }
 }
 
-function go(totalSec) {
+function startWith(totalSec) {
   S.running = true; S.finished = false;
   S.totalSec = totalSec;
   S.endTs = Date.now() + totalSec * 1000;
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-cancel').disabled = false;
-  document.getElementById('btn-fs').disabled = false;
+
+  el('btn-start').disabled  = true;
+  el('btn-cancel').disabled = false;
+  el('btn-fs').disabled     = false;
+
   clearInterval(S.tickId);
   S.tickId = setInterval(tick, 250);
   tick();
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Timer – tick
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function tick() {
   if (!S.running) return;
   const rem = Math.max(0, Math.ceil((S.endTs - Date.now()) / 1000));
-  renderTimer(rem);
-  syncFS(rem);
 
-  const flash = rem > 0 && rem <= 5;
-  document.getElementById('flash-layer').classList.toggle('on', flash);
+  renderTimer(rem);
+  if (S.isFS) syncFS(rem);
+
+  // Flash: last 5 sec
+  el('flash').classList.toggle('on', rem > 0 && rem <= 5);
 
   if (rem <= 0) timeup();
 }
 
 function renderTimer(rem) {
   const m = Math.floor(rem / 60), s = rem % 60;
-  document.getElementById('timer-display').textContent =
-    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el('timer-display').textContent = `${p2(m)}:${p2(s)}`;
 
-  const prog = S.totalSec > 0 ? rem / S.totalSec : 0;
-  const off = RING_C * (1 - Math.max(0, Math.min(1, prog)));
-  const ring = document.getElementById('ring');
-  ring.style.strokeDasharray = RING_C;
+  const prog  = S.totalSec > 0 ? rem / S.totalSec : 0;
+  const off   = RING_C * (1 - Math.max(0, Math.min(1, prog)));
+  const ring  = el('ring');
+  ring.style.strokeDasharray  = RING_C;
   ring.style.strokeDashoffset = off;
-
-  const th = THEMES.find(t => t.id === S.themeId) || THEMES[0];
-  ring.style.stroke = (rem > 0 && rem <= 5) ? '#f87171' : th.accent;
+  ring.style.stroke = (rem > 0 && rem <= 5) ? '#c97060' : 'var(--gold)';
 }
 
 function syncFS(rem) {
-  if (!S.isFS) return;
   const m = Math.floor(rem / 60), s = rem % 60;
-  document.getElementById('fs-time').textContent =
-    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el('fs-time').textContent = `${p2(m)}:${p2(s)}`;
 
   const prog = S.totalSec > 0 ? rem / S.totalSec : 0;
-  const off = FS_C * (1 - Math.max(0, Math.min(1, prog)));
-  const r = document.getElementById('fs-ring-progress');
-  r.style.strokeDasharray = FS_C;
+  const off  = FS_C * (1 - Math.max(0, Math.min(1, prog)));
+  const r    = el('fs-ring-prog');
+  r.style.strokeDasharray  = FS_C;
   r.style.strokeDashoffset = off;
-
-  const th = THEMES.find(t => t.id === S.themeId) || THEMES[0];
-  r.style.stroke = (rem > 0 && rem <= 5) ? '#f87171' : th.accent;
+  r.style.stroke = (rem > 0 && rem <= 5) ? '#c97060' : 'var(--gold)';
 }
 
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Timer – finish / cancel
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function timeup() {
   clearInterval(S.tickId);
   S.running = false; S.finished = true; S.alarmOn = true;
-  document.getElementById('flash-layer').classList.remove('on');
-  document.getElementById('timer-display').textContent = '00:00';
-  document.getElementById('timer-status').textContent = 'TIME UP';
-  renderTimer(0); syncFS(0);
-  document.getElementById('alarm-stop-row').style.display = '';
-  document.getElementById('fs-alarm-btn').style.display = '';
-  document.getElementById('fs-timeup').style.display = '';
-  if (!S.muted) beepLoop();
+  el('flash').classList.remove('on');
+
+  el('timer-display').textContent = '00:00';
+  el('timer-status').textContent  = 'TIME UP';
+  renderTimer(0);
+  if (S.isFS) syncFS(0);
+
+  el('alarm-row').style.display   = '';
+  el('fs-alarm-btn').style.display = '';
+  el('fs-timeup').style.display    = '';
+
+  if (!S.muted) alarmStart();
 }
 
 function cancelTimer() {
   clearInterval(S.tickId);
   S.running = false; S.finished = false; S.alarmOn = false;
-  document.getElementById('flash-layer').classList.remove('on');
-  stopAlarm();
+  el('flash').classList.remove('on');
+  alarmStop();
   resetUI();
 }
 
 function resetUI() {
-  document.getElementById('timer-display').textContent = '--:--';
-  document.getElementById('timer-status').textContent = '待機中';
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-cancel').disabled = true;
-  document.getElementById('btn-fs').disabled = true;
-  document.getElementById('alarm-stop-row').style.display = 'none';
-  document.getElementById('fs-alarm-btn').style.display = 'none';
-  document.getElementById('fs-timeup').style.display = 'none';
-  const ring = document.getElementById('ring');
-  ring.style.strokeDasharray = RING_C;
+  el('timer-display').textContent = '--:--';
+  el('timer-status').textContent  = '待機中';
+  el('btn-start').disabled  = false;
+  el('btn-cancel').disabled = true;
+  el('btn-fs').disabled     = true;
+  el('alarm-row').style.display    = 'none';
+  el('fs-alarm-btn').style.display = 'none';
+  el('fs-timeup').style.display    = 'none';
+
+  const ring = el('ring');
+  ring.style.strokeDasharray  = RING_C;
   ring.style.strokeDashoffset = RING_C;
-  const fsRing = document.getElementById('fs-ring-progress');
-  fsRing.style.strokeDasharray = FS_C;
-  fsRing.style.strokeDashoffset = FS_C;
+  ring.style.stroke = 'var(--gold)';
+
+  const fsr = el('fs-ring-prog');
+  fsr.style.strokeDasharray  = FS_C;
+  fsr.style.strokeDashoffset = FS_C;
 }
 
-/* ============================================================
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Alarm (Web Audio API)
-============================================================ */
-let actx = null, beepId = null;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+let actx = null, alarmId = null;
 
-function getACtx() {
-  if (!actx || actx.state === 'closed') actx = new (window.AudioContext || window.webkitAudioContext)();
+function getCtx() {
+  if (!actx || actx.state === 'closed')
+    actx = new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state === 'suspended') actx.resume();
   return actx;
 }
 
-function beepOnce() {
+function beep() {
   try {
-    const ctx = getACtx();
-    const t = ctx.currentTime;
+    const ctx = getCtx(), t = ctx.currentTime;
     const o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
-    const g = ctx.createGain();
+    const g  = ctx.createGain();
     o1.connect(g); o2.connect(g); g.connect(ctx.destination);
     o1.type = 'square'; o1.frequency.value = 880;
     o2.type = 'square'; o2.frequency.value = 660;
-    g.gain.setValueAtTime(0.2, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    g.gain.setValueAtTime(0.18, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
     o1.start(t); o1.stop(t + 0.14);
-    o2.start(t + 0.14); o2.stop(t + 0.4);
+    o2.start(t + 0.14); o2.stop(t + 0.42);
   } catch(e) {}
 }
 
-function beepLoop() { beepOnce(); beepId = setInterval(beepOnce, 1300); }
+function alarmStart() { beep(); alarmId = setInterval(beep, 1300); }
 
-function stopAlarm() {
-  clearInterval(beepId);
+function alarmStop() {
+  clearInterval(alarmId);
   S.alarmOn = false;
-  document.getElementById('alarm-stop-row').style.display = 'none';
-  document.getElementById('fs-alarm-btn').style.display = 'none';
-  document.getElementById('fs-timeup').style.display = 'none';
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-cancel').disabled = true;
+  el('alarm-row').style.display    = 'none';
+  el('fs-alarm-btn').style.display = 'none';
+  el('fs-timeup').style.display    = 'none';
+  el('btn-start').disabled  = false;
+  el('btn-cancel').disabled = true;
 }
+
+function stopAlarm() { alarmStop(); }
 
 function toggleMute() {
   S.muted = !S.muted;
-  document.getElementById('btn-mute').textContent = S.muted ? '🔇' : '🔊';
-  if (S.muted) clearInterval(beepId);
-  else if (S.alarmOn) beepLoop();
-  save();
+  el('btn-mute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
+  if (S.muted) clearInterval(alarmId);
+  else if (S.alarmOn) alarmStart();
+  persist();
 }
 
-/* ============================================================
-   Fullscreen mode
-============================================================ */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Fullscreen
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function enterFS() {
   if (!S.running && !S.alarmOn && !S.finished) return;
   S.isFS = true;
-  document.getElementById('fs').classList.add('on');
+  el('fullscreen').classList.add('on');
+
+  // Init fullscreen ring
+  const fsr = el('fs-ring-prog');
+  fsr.style.strokeDasharray  = FS_C;
+  fsr.style.strokeDashoffset = FS_C;
+  fsr.style.stroke = 'var(--gold)';
+
   const rem = S.running ? Math.max(0, Math.ceil((S.endTs - Date.now()) / 1000)) : 0;
   syncFS(rem);
+
   if (S.alarmOn) {
-    document.getElementById('fs-alarm-btn').style.display = '';
-    document.getElementById('fs-timeup').style.display = '';
+    el('fs-alarm-btn').style.display = '';
+    el('fs-timeup').style.display    = '';
   }
 }
 
 function exitFS() {
   S.isFS = false;
-  document.getElementById('fs').classList.remove('on');
+  el('fullscreen').classList.remove('on');
 }
 
-/* ============================================================
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Stopwatch
-============================================================ */
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function swStart() {
   if (S.swRunning) return;
   S.swRunning = true;
-  S.swStart = Date.now() - S.swElapsed;
-  document.getElementById('sw-start').disabled = true;
-  document.getElementById('sw-stop').disabled = false;
+  S.swStartTs = Date.now() - S.swElapsed;
+  el('sw-start').disabled = true;
+  el('sw-stop').disabled  = false;
   S.swTickId = setInterval(swTick, 17);
   swTick();
 }
@@ -1023,65 +1127,69 @@ function swStart() {
 function swStop() {
   if (!S.swRunning) return;
   S.swRunning = false;
-  S.swElapsed = Date.now() - S.swStart;
+  S.swElapsed = Date.now() - S.swStartTs;
   clearInterval(S.swTickId);
-  document.getElementById('sw-start').disabled = false;
-  document.getElementById('sw-stop').disabled = true;
+  el('sw-start').disabled = false;
+  el('sw-stop').disabled  = true;
 }
 
 function swReset() {
   clearInterval(S.swTickId);
-  S.swRunning = false; S.swElapsed = 0; S.swStart = null;
-  document.getElementById('sw-display').textContent = '00:00.00';
-  document.getElementById('sw-start').disabled = false;
-  document.getElementById('sw-stop').disabled = true;
+  S.swRunning = false; S.swElapsed = 0; S.swStartTs = 0;
+  el('sw-display').textContent = '00:00.00';
+  el('sw-start').disabled = false;
+  el('sw-stop').disabled  = true;
 }
 
 function swTick() {
-  const e = S.swRunning ? Date.now() - S.swStart : S.swElapsed;
+  const e  = S.swRunning ? Date.now() - S.swStartTs : S.swElapsed;
   const cs = Math.floor(e / 10) % 100;
-  const sec = Math.floor(e / 1000) % 60;
-  const min = Math.floor(e / 60000);
-  document.getElementById('sw-display').textContent =
-    `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(cs).padStart(2,'0')}`;
+  const s  = Math.floor(e / 1000) % 60;
+  const m  = Math.floor(e / 60000);
+  el('sw-display').textContent =
+    `${p2(m)}:${p2(s)}.${p2(cs)}`;
 }
 
-/* ============================================================
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Util
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+function el(id) { return document.getElementById(id); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Init
-============================================================ */
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 function init() {
-  load();
+  restore();
 
-  // Apply theme (no animation on init)
-  const theme = THEMES.find(t => t.id === S.themeId) || THEMES[0];
-  applyTheme(theme, false);
-
-  // Ring init
-  const ring = document.getElementById('ring');
-  ring.style.strokeDasharray = RING_C;
+  // Ring initial state
+  const ring = el('ring');
+  ring.style.strokeDasharray  = RING_C;
   ring.style.strokeDashoffset = RING_C;
-  ring.style.stroke = theme.accent;
+  ring.style.stroke = 'var(--gold)';
 
-  const fsRing = document.getElementById('fs-ring-progress');
-  fsRing.style.strokeDasharray = FS_C;
-  fsRing.style.strokeDashoffset = FS_C;
-  fsRing.style.stroke = theme.accent;
+  const fsr = el('fs-ring-prog');
+  fsr.style.strokeDasharray  = FS_C;
+  fsr.style.strokeDashoffset = FS_C;
+  fsr.style.stroke = 'var(--gold)';
 
-  buildPicker();
+  // FS ring CSS (not set via class, set directly)
+  el('fs-ring-track').setAttribute('fill', 'none');
+  el('fs-ring-track').setAttribute('stroke', 'rgba(255,255,255,0.06)');
+  el('fs-ring-track').setAttribute('stroke-width', '5');
+  el('fs-ring-prog').setAttribute('fill', 'none');
+  el('fs-ring-prog').setAttribute('stroke-width', '5');
+  el('fs-ring-prog').setAttribute('stroke-linecap', 'round');
+
+  // Restore state
   switchTab(S.tab);
-  setMode(S.timerMode);
+  setMode(S.mode);
+  if (S.min) el('inp-min').value = S.min;
+  if (S.end) el('inp-end').value = S.end;
+  el('btn-mute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
 
-  if (S.timerMinutes) document.getElementById('inp-min').value = S.timerMinutes;
-  if (S.timerEndTime) document.getElementById('inp-end').value = S.timerEndTime;
-  document.getElementById('btn-mute').textContent = S.muted ? '🔇' : '🔊';
-
-  // Input listeners
-  document.getElementById('inp-min').addEventListener('input', function() {
-    S.timerMinutes = this.value; save();
-  });
-  document.getElementById('inp-end').addEventListener('change', function() {
-    S.timerEndTime = this.value; save();
-  });
+  // Input change listeners
+  el('inp-min').addEventListener('input', function() { S.min = this.value; persist(); });
+  el('inp-end').addEventListener('change', function() { S.end = this.value; persist(); });
 
   // Clock
   clock(); setInterval(clock, 1000);
