@@ -252,6 +252,36 @@
     color: var(--faint); font-size: 0.72rem; border-radius: 9px;
   }
   .btn-util:not(:disabled):hover { color: var(--dim); }
+  .btn-fs {
+    flex: 1; padding: 13px 8px;
+    background: rgba(0,0,0,0.40); border: 1px solid var(--ui-bd);
+    color: var(--faint); font-size: 0.82rem; border-radius: 11px;
+    font-family: inherit; font-weight: 600; cursor: pointer;
+    transition: color 0.15s;
+  }
+  .btn-fs:hover { color: var(--dim); }
+
+  /* Slideshow toggle */
+  .ss-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .ss-label { font-size: 0.70rem; color: var(--faint); }
+  .tog {
+    width: 42px; height: 24px; border-radius: 12px; flex-shrink: 0;
+    background: rgba(255,255,255,0.14); border: none; cursor: pointer;
+    position: relative; transition: background 0.22s;
+  }
+  .tog::after {
+    content: ''; position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; top: 3px; left: 3px;
+    transition: transform 0.22s;
+  }
+  .tog.on { background: var(--gold); }
+  .tog.on::after { transform: translateX(18px); }
+
   .btn-alm {
     width: 100%; padding: 13px;
     background: rgba(196,96,80,0.85); color: #fff;
@@ -312,6 +342,10 @@
 <!-- Panel: background picker -->
 <div id="panel-bg" class="panel ui-hide">
   <div class="bg-grid" id="bglist"></div>
+  <div class="ss-row">
+    <span class="ss-label">スライドショー（30秒ごとに切替）</span>
+    <button class="tog" id="ss-tog" onclick="toggleSS()"></button>
+  </div>
 </div>
 
 <!-- Panel: settings -->
@@ -341,8 +375,9 @@
     <div class="brow">
       <button class="btn btn-go" onclick="startT()">開始</button>
     </div>
-    <div style="display:flex;justify-content:flex-end">
+    <div class="brow">
       <button class="btn btn-util" id="bmute" onclick="togMute()">🔊 ミュート</button>
+      <button class="btn btn-fs" onclick="enterFS()">⛶ 全画面</button>
     </div>
   </div>
 
@@ -420,7 +455,7 @@
     <div id="at">
       <div id="slbl" class="ui-hide">待機中</div>
       <span id="tdisp">--:--</span>
-      <div id="pbw" class="ui-hide">
+      <div id="pbw">
         <div id="pbf"></div>
       </div>
     </div>
@@ -594,7 +629,7 @@ function go(sec) {
   setState('running');
   const pbf = el('pbf');
   pbf.style.transition = 'none';
-  pbf.style.width = '100%';
+  pbf.style.width = '0%';
   pbf.getBoundingClientRect(); // force reflow
   pbf.style.transition = 'width 0.75s linear, background 0.3s';
   clearInterval(S.tid);
@@ -612,7 +647,8 @@ function tick() {
 
 function drawBar(rem) {
   el('tdisp').textContent = `${p2(Math.floor(rem / 60))}:${p2(rem % 60)}`;
-  const pct = S.total > 0 ? (rem / S.total * 100) : 0;
+  const elapsed = S.total - rem;
+  const pct = S.total > 0 ? Math.min(100, elapsed / S.total * 100) : 0;
   el('pbf').style.width = pct + '%';
   el('pbf').style.background = (rem > 0 && rem <= 5) ? 'var(--danger)' : 'var(--gold)';
 }
@@ -623,7 +659,7 @@ function timeup() {
   el('flash').classList.remove('on');
   el('tdisp').textContent = '00:00';
   const pbf = el('pbf');
-  pbf.style.transition = 'none'; pbf.style.width = '0%';
+  pbf.style.transition = 'none'; pbf.style.width = '100%';
   setState('alarm');
   if (S.isFS) el('fs-alm').style.display = '';
   else openPanel('set');
@@ -686,18 +722,31 @@ function togMute() {
 
 /* ── Fullscreen ── */
 function enterFS() {
-  if (!S.run && !S.alm && !S.fin) return;
   S.isFS = true;
   document.body.classList.add('fs');
   el('fsui').style.display = 'flex';
   if (S.alm) el('fs-alm').style.display = '';
+  closeAllPanels();
+  const el2 = document.documentElement;
+  if (el2.requestFullscreen) el2.requestFullscreen().catch(() => {});
+  else if (el2.webkitRequestFullscreen) el2.webkitRequestFullscreen();
 }
 function exitFS() {
   S.isFS = false;
   document.body.classList.remove('fs');
   el('fsui').style.display = 'none';
   el('fs-alm').style.display = 'none';
+  if (document.fullscreenElement && document.exitFullscreen)
+    document.exitFullscreen().catch(() => {});
+  else if (document.webkitFullscreenElement && document.webkitExitFullscreen)
+    document.webkitExitFullscreen();
 }
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && S.isFS) exitFS();
+});
+document.addEventListener('webkitfullscreenchange', () => {
+  if (!document.webkitFullscreenElement && S.isFS) exitFS();
+});
 
 /* ── Panels ── */
 let openPanelId = null;
@@ -722,6 +771,20 @@ function closeAllPanels() {
 function togglePanel(id) {
   if (el('panel-' + id).classList.contains('open')) closePanel(id);
   else openPanel(id);
+}
+
+/* ── Slideshow ── */
+let ssTid = null;
+function toggleSS() {
+  const on = el('ss-tog').classList.toggle('on');
+  if (on) {
+    ssTid = setInterval(() => {
+      const idx = BGS.findIndex(b => b.id === S.bg);
+      changeBg(BGS[(idx + 1) % BGS.length], true);
+    }, 30000);
+  } else {
+    clearInterval(ssTid); ssTid = null;
+  }
 }
 
 /* ── Stopwatch ── */
