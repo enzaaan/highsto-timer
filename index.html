@@ -400,6 +400,10 @@
     <span class="ss-label">スライドショー（30秒ごとに切替）</span>
     <button class="tog" id="ss-tog" onclick="toggleSS()"></button>
   </div>
+  <div class="ss-row">
+    <span class="ss-label">ランダムに変更</span>
+    <button class="tog" id="ss-rand" onclick="toggleRand()"></button>
+  </div>
 </div>
 
 <!-- Panel: settings -->
@@ -541,10 +545,18 @@
 
 /* ── Backgrounds ── */
 const BGS = [
-  { id:'b1', n:'ジェンキンス', s:'background/ジェンキンス.webp' },
-  { id:'b2', n:'全員集合',     s:'background/全員集合.webp'     },
-  { id:'b3', n:'坂本龍馬',     s:'background/坂本龍馬.webp'     },
-  { id:'b4', n:'沖田総司',     s:'background/沖田総司.webp'     },
+  { id:'b1',  n:'ジェンキンス', s:'background/ジェンキンス.webp' },
+  { id:'b2',  n:'全員集合',     s:'background/全員集合.webp'     },
+  { id:'b3',  n:'坂本龍馬',     s:'background/坂本龍馬.webp'     },
+  { id:'b4',  n:'沖田総司',     s:'background/沖田総司.webp'     },
+  { id:'b5',  n:'ガウス',       s:'background/ガウス.webp'       },
+  { id:'b6',  n:'ササノン',     s:'background/ササノン.webp'     },
+  { id:'b7',  n:'メアリ一世',   s:'background/メアリ一世.webp'   },
+  { id:'b8',  n:'夏侯惇',       s:'background/夏侯惇.webp'       },
+  { id:'b9',  n:'徳川四天王',   s:'background/徳川四天王.webp'   },
+  { id:'b10', n:'徳川家康',     s:'background/徳川家康.webp'     },
+  { id:'b11', n:'新撰組',       s:'background/新撰組.webp'       },
+  { id:'b12', n:'曹丕',         s:'background/曹丕.webp'         },
 ];
 let bgLay = 'a';
 
@@ -587,14 +599,14 @@ let S = {
   tab:'t', mode:'m', min:'', end:'', muted:false, bg:'b1',
   run:false, endTs:0, total:0, fin:false, alm:false, tid:null,
   swRun:false, swTs:0, swEl:0, swTid:null,
-  isFS:false, dispSize:1,
+  isFS:false, dispSize:1, ssRandom:false,
 };
 
 /* ── Persist ── */
 function save() {
   try {
     localStorage.setItem('hst7', JSON.stringify(
-      {tab:S.tab, mode:S.mode, min:S.min, end:S.end, muted:S.muted, bg:S.bg, dispSize:S.dispSize}
+      {tab:S.tab, mode:S.mode, min:S.min, end:S.end, muted:S.muted, bg:S.bg, dispSize:S.dispSize, ssRandom:S.ssRandom}
     ));
   } catch(e) {}
 }
@@ -608,6 +620,7 @@ function load() {
     if (typeof d.muted === 'boolean') S.muted = d.muted;
     if (d.bg)   S.bg   = d.bg;
     if (d.dispSize) S.dispSize = d.dispSize;
+    if (typeof d.ssRandom === 'boolean') S.ssRandom = d.ssRandom;
   } catch(e) {}
 }
 
@@ -880,17 +893,42 @@ function togglePanel(id) {
 }
 
 /* ── Slideshow ── */
-let ssTid = null;
+let ssTid = null, ssQueue = [];
+
+function shuffleQueue(excludeId) {
+  const ids = BGS.map(b => b.id).filter(id => id !== excludeId);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
+
+function ssNext() {
+  if (S.ssRandom) {
+    if (!ssQueue.length) ssQueue = shuffleQueue(S.bg);
+    const nextId = ssQueue.shift();
+    changeBg(BGS.find(b => b.id === nextId), true);
+  } else {
+    const idx = BGS.findIndex(b => b.id === S.bg);
+    changeBg(BGS[(idx + 1) % BGS.length], true);
+  }
+}
+
 function toggleSS() {
   const on = el('ss-tog').classList.toggle('on');
   if (on) {
-    ssTid = setInterval(() => {
-      const idx = BGS.findIndex(b => b.id === S.bg);
-      changeBg(BGS[(idx + 1) % BGS.length], true);
-    }, 30000);
+    if (S.ssRandom) ssQueue = shuffleQueue(S.bg);
+    ssTid = setInterval(ssNext, 30000);
   } else {
     clearInterval(ssTid); ssTid = null;
   }
+}
+
+function toggleRand() {
+  S.ssRandom = el('ss-rand').classList.toggle('on');
+  if (S.ssRandom && ssTid) ssQueue = shuffleQueue(S.bg);
+  save();
 }
 
 /* ── Stopwatch ── */
@@ -952,6 +990,7 @@ function init() {
   if (S.min) el('n-m').value = S.min;
   if (S.end) el('n-e').value = S.end;
   el('bmute').textContent = S.muted ? '🔇 ミュート中' : '🔊 ミュート';
+  if (S.ssRandom) el('ss-rand').classList.add('on');
 
   el('n-m').addEventListener('input',  function() { S.min = this.value; save(); });
   el('n-e').addEventListener('change', function() { S.end = this.value; save(); });
