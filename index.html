@@ -116,7 +116,10 @@
     font-weight: 800; font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em; line-height: 1;
     text-shadow: 0 2px 40px rgba(0,0,0,0.75); text-align: center;
+    transition: font-size 0.2s;
   }
+  #tdisp[data-len="hour"] { font-size: clamp(2.8rem, 9vmin, 5.5rem); }
+  #tdisp[data-len="day"]  { font-size: clamp(2.2rem, 7vmin, 4.2rem); }
 
   /* Progress bar */
   #pbw {
@@ -201,13 +204,17 @@
   .mbtn.active { background: rgba(255,255,255,0.13); color: var(--text); }
 
   .irow { display: flex; align-items: center; gap: 8px; }
-  input[type="number"], input[type="time"] {
+  input[type="number"], input[type="time"], input[type="datetime-local"] {
     flex: 1; background: rgba(0,0,0,0.35); border: 1px solid var(--ui-bd);
     border-radius: 10px; color: var(--text);
     font-family: 'Inter', sans-serif; font-size: 1.4rem; font-weight: 700;
     font-variant-numeric: tabular-nums; padding: 9px 14px; text-align: center;
     transition: border-color 0.2s, box-shadow 0.2s;
     -webkit-appearance: none; appearance: none;
+  }
+  input[type="datetime-local"] {
+    font-size: 1rem; letter-spacing: 0.02em;
+    color-scheme: dark;
   }
   input:focus {
     outline: none; border-color: rgba(200,164,74,0.6);
@@ -296,7 +303,9 @@
   body.fs .panel { display: none !important; }
 
   body.fs .center { padding: 0; }
-  body.fs #tdisp  { font-size: clamp(5rem, 18vmin, 12rem) !important; }
+  body.fs #tdisp                   { font-size: clamp(5rem, 18vmin, 12rem); }
+  body.fs #tdisp[data-len="hour"] { font-size: clamp(3.5rem, 12vmin, 8rem); }
+  body.fs #tdisp[data-len="day"]  { font-size: clamp(2.8rem, 9vmin, 6rem); }
   body.fs #pbw    { width: min(420px, 72vw); margin-top: 24px; height: 4px; }
 
   #fsui { display: none; position: fixed; inset: 0; z-index: 20; pointer-events: none; }
@@ -355,14 +364,14 @@
   <div id="ci" class="pset-section">
     <div class="mtgl">
       <button class="mbtn active" id="m-m" onclick="setM('m')">分数指定</button>
-      <button class="mbtn"        id="m-e" onclick="setM('e')">終了時刻指定</button>
+      <button class="mbtn"        id="m-e" onclick="setM('e')">終了日時指定</button>
     </div>
     <div id="f-m" class="irow">
       <input type="number" id="n-m" min="1" max="999" placeholder="10">
       <span class="iunit">分</span>
     </div>
     <div id="f-e" class="irow" style="display:none">
-      <input type="time" id="n-e">
+      <input type="datetime-local" id="n-e">
     </div>
     <div class="ferr" id="ferr"></div>
     <div class="psets">
@@ -545,6 +554,16 @@ function load() {
 /* ── Clock ── */
 const WD = ['日','月','火','水','木','金','土'];
 const p2 = n => String(n).padStart(2, '0');
+function fmtTime(rem) {
+  if (rem < 3600) {
+    return `${p2(Math.floor(rem / 60))}:${p2(rem % 60)}`;
+  } else if (rem < 86400) {
+    return `${p2(Math.floor(rem / 3600))}:${p2(Math.floor((rem % 3600) / 60))}:${p2(rem % 60)}`;
+  } else {
+    const d = Math.floor(rem / 86400);
+    return `${d}日 ${p2(Math.floor((rem % 86400) / 3600))}:${p2(Math.floor((rem % 3600) / 60))}:${p2(rem % 60)}`;
+  }
+}
 function clock() {
   const j = new Date(new Date().toLocaleString('en-US', {timeZone:'Asia/Tokyo'}));
   el('ct').textContent = `${p2(j.getHours())}:${p2(j.getMinutes())}:${p2(j.getSeconds())}`;
@@ -576,6 +595,9 @@ function toggleMode() {
 }
 
 /* ── Timer input mode ── */
+function toLocalDTStr(d) {
+  return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
 function setM(m) {
   S.mode = m;
   el('m-m').classList.toggle('active', m === 'm');
@@ -583,6 +605,16 @@ function setM(m) {
   el('f-m').style.display = m === 'm' ? '' : 'none';
   el('f-e').style.display = m === 'e' ? '' : 'none';
   el('ferr').textContent = '';
+  if (m === 'e') {
+    const inp = el('n-e');
+    const now = new Date();
+    inp.min = toLocalDTStr(now);
+    if (!inp.value) {
+      const def = new Date(now.getTime() + 60 * 60 * 1000);
+      inp.value = toLocalDTStr(def);
+      S.end = inp.value;
+    }
+  }
   save();
 }
 
@@ -612,13 +644,10 @@ function startT() {
     S.min = v; save(); closeAllPanels(); go(v * 60);
   } else {
     const ts = el('n-e').value;
-    if (!ts) { el('ferr').textContent = '終了時刻を入力してください'; return; }
-    const [h, m] = ts.split(':').map(Number);
-    const now = new Date();
-    const diff = Math.floor(
-      (new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0) - now) / 1000
-    );
-    if (diff <= 0) { el('ferr').textContent = '現在時刻より後を指定してください'; return; }
+    if (!ts) { el('ferr').textContent = '終了日時を入力してください'; return; }
+    const endDate = new Date(ts);
+    const diff = Math.floor((endDate.getTime() - Date.now()) / 1000);
+    if (diff <= 0) { el('ferr').textContent = '現在日時より後を指定してください'; return; }
     S.end = ts; save(); closeAllPanels(); go(diff);
   }
 }
@@ -646,7 +675,9 @@ function tick() {
 }
 
 function drawBar(rem) {
-  el('tdisp').textContent = `${p2(Math.floor(rem / 60))}:${p2(rem % 60)}`;
+  const td = el('tdisp');
+  td.textContent = fmtTime(rem);
+  td.dataset.len = rem >= 86400 ? 'day' : rem >= 3600 ? 'hour' : 'min';
   const elapsed = S.total - rem;
   const pct = S.total > 0 ? Math.min(100, elapsed / S.total * 100) : 0;
   el('pbf').style.width = pct + '%';
