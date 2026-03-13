@@ -297,6 +297,45 @@
   }
   @keyframes apls { 0%,100%{transform:scale(1)} 50%{transform:scale(1.02)} }
 
+  /* ── Display size control ── */
+  .size-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .size-label { font-size: 0.70rem; color: var(--faint); }
+  .size-ctrl { display: flex; align-items: center; gap: 10px; }
+  .size-btn {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: rgba(0,0,0,0.40); border: 1px solid var(--ui-bd);
+    color: var(--dim); font-size: 1.1rem; font-weight: 700;
+    font-family: inherit; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .size-btn:hover:not(:disabled) { background: rgba(200,164,74,0.22); border-color: rgba(200,164,74,0.4); color: var(--gold); }
+  .size-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+  .size-dots { display: flex; gap: 5px; align-items: center; }
+  .sdot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(255,255,255,0.18); transition: background 0.2s, transform 0.2s;
+  }
+  .sdot.active { background: var(--gold); transform: scale(1.25); }
+
+  /* Timer display — size 2 */
+  body[data-dispsize="2"] #tdisp                  { font-size: clamp(5.5rem, 17vmin, 10rem); }
+  body[data-dispsize="2"] #tdisp[data-len="hour"] { font-size: clamp(3.8rem, 12vmin, 7rem); }
+  body[data-dispsize="2"] #tdisp[data-len="day"]  { font-size: clamp(3rem, 9.5vmin, 5.5rem); }
+  /* Timer display — size 3 */
+  body[data-dispsize="3"] #tdisp                  { font-size: clamp(7rem, 22vmin, 13rem); }
+  body[data-dispsize="3"] #tdisp[data-len="hour"] { font-size: clamp(5rem, 15vmin, 9rem); }
+  body[data-dispsize="3"] #tdisp[data-len="day"]  { font-size: clamp(3.8rem, 12vmin, 7rem); }
+
+  /* Stopwatch display — size 2 */
+  body[data-dispsize="2"] #swdisp { font-size: clamp(4.5rem, 14vmin, 8.5rem); }
+  /* Stopwatch display — size 3 */
+  body[data-dispsize="3"] #swdisp { font-size: clamp(6rem, 18vmin, 12rem); }
+
   /* ── Fullscreen ── */
   body.fs header,
   body.fs #iconbar,
@@ -306,6 +345,12 @@
   body.fs #tdisp                   { font-size: clamp(5rem, 18vmin, 12rem); }
   body.fs #tdisp[data-len="hour"] { font-size: clamp(3.5rem, 12vmin, 8rem); }
   body.fs #tdisp[data-len="day"]  { font-size: clamp(2.8rem, 9vmin, 6rem); }
+  body.fs[data-dispsize="2"] #tdisp                  { font-size: clamp(6.5rem, 22vmin, 15rem); }
+  body.fs[data-dispsize="2"] #tdisp[data-len="hour"] { font-size: clamp(4.5rem, 15vmin, 10rem); }
+  body.fs[data-dispsize="2"] #tdisp[data-len="day"]  { font-size: clamp(3.5rem, 12vmin, 8rem); }
+  body.fs[data-dispsize="3"] #tdisp                  { font-size: clamp(8rem, 27vmin, 19rem); }
+  body.fs[data-dispsize="3"] #tdisp[data-len="hour"] { font-size: clamp(5.5rem, 18vmin, 13rem); }
+  body.fs[data-dispsize="3"] #tdisp[data-len="day"]  { font-size: clamp(4.2rem, 14vmin, 10rem); }
   body.fs #pbw    { width: min(420px, 72vw); margin-top: 24px; height: 4px; }
 
   #fsui { display: none; position: fixed; inset: 0; z-index: 20; pointer-events: none; }
@@ -409,6 +454,20 @@
       <button class="btn btn-go"    id="sw-s" onclick="swSt()" style="flex:1">開始</button>
       <button class="btn btn-ghost" id="sw-p" onclick="swPa()" disabled style="flex:1">停止</button>
       <button class="btn btn-ghost" id="sw-r" onclick="swRe()" style="flex:1">リセット</button>
+    </div>
+  </div>
+
+  <!-- Size control (always visible) -->
+  <div class="size-row">
+    <span class="size-label">文字サイズ</span>
+    <div class="size-ctrl">
+      <button class="size-btn" id="size-dn" onclick="adjSize(-1)">−</button>
+      <div class="size-dots" id="size-dots">
+        <span class="sdot active"></span>
+        <span class="sdot"></span>
+        <span class="sdot"></span>
+      </div>
+      <button class="size-btn" id="size-up" onclick="adjSize(1)">＋</button>
     </div>
   </div>
 
@@ -528,14 +587,14 @@ let S = {
   tab:'t', mode:'m', min:'', end:'', muted:false, bg:'b1',
   run:false, endTs:0, total:0, fin:false, alm:false, tid:null,
   swRun:false, swTs:0, swEl:0, swTid:null,
-  isFS:false,
+  isFS:false, dispSize:1,
 };
 
 /* ── Persist ── */
 function save() {
   try {
     localStorage.setItem('hst7', JSON.stringify(
-      {tab:S.tab, mode:S.mode, min:S.min, end:S.end, muted:S.muted, bg:S.bg}
+      {tab:S.tab, mode:S.mode, min:S.min, end:S.end, muted:S.muted, bg:S.bg, dispSize:S.dispSize}
     ));
   } catch(e) {}
 }
@@ -548,7 +607,23 @@ function load() {
     if (d.end)  S.end  = d.end;
     if (typeof d.muted === 'boolean') S.muted = d.muted;
     if (d.bg)   S.bg   = d.bg;
+    if (d.dispSize) S.dispSize = d.dispSize;
   } catch(e) {}
+}
+
+/* ── Display size ── */
+function applySize() {
+  const s = S.dispSize;
+  document.body.dataset.dispsize = s;
+  const dots = el('size-dots').querySelectorAll('.sdot');
+  dots.forEach((d, i) => d.classList.toggle('active', i < s));
+  el('size-dn').disabled = s <= 1;
+  el('size-up').disabled = s >= 3;
+}
+function adjSize(d) {
+  S.dispSize = Math.max(1, Math.min(3, S.dispSize + d));
+  applySize();
+  save();
 }
 
 /* ── Clock ── */
@@ -881,6 +956,7 @@ function init() {
   el('n-m').addEventListener('input',  function() { S.min = this.value; save(); });
   el('n-e').addEventListener('change', function() { S.end = this.value; save(); });
 
+  applySize();
   clock();
   setInterval(clock, 1000);
   resetIdle();
